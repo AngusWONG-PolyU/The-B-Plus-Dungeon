@@ -52,7 +52,7 @@ public class BPlusTreeNode<TKey, TValue> where TKey : IComparable<TKey>
     // Checks if the node is full based on the order
     public bool IsFull(int order)
     {
-        return Keys.Count >= order - 1;
+        return Keys.Count > order - 1;
     }
 
     // Checks if the node has minimum keys based on the order
