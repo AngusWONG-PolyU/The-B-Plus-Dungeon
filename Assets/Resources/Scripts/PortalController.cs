@@ -22,7 +22,6 @@ public class PortalController : MonoBehaviour
     
     [Header("Optional Settings")]
     public bool pauseGameDuringConfirmation = true; // Pause game when showing confirmation
-    public bool allowExitToCancel = true; // Cancel when player leaves portal area
     
     private GameObject playerInRange;
     private bool showingConfirmation = false;
@@ -85,17 +84,11 @@ public class PortalController : MonoBehaviour
         {
             col.isTrigger = true;
         }
-            
-        Collider2D col2D = GetComponent<Collider2D>();
-        if (col2D != null)
-        {
-            col2D.isTrigger = true;
-        }
     }
     
     void Update()
     {
-        // Optional: Add ESC key to cancel (even in UI mode)
+        // Add ESC key to cancel (even in UI mode)
         if (showingConfirmation && Input.GetKeyDown(KeyCode.Escape))
         {
             CancelTeleport();
@@ -109,34 +102,6 @@ public class PortalController : MonoBehaviour
         {
             playerInRange = other.gameObject;
             ShowConfirmation();
-        }
-    }
-    
-    // For 2D games
-    void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag(playerTag) && !showingConfirmation)
-        {
-            playerInRange = other.gameObject;
-            ShowConfirmation();
-        }
-    }
-    
-    // Player leaves portal area
-    void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag(playerTag) && allowExitToCancel)
-        {
-            CancelTeleport();
-        }
-    }
-    
-    // For 2D games
-    void OnTriggerExit2D(Collider2D other)
-    {
-        if (other.CompareTag(playerTag) && allowExitToCancel)
-        {
-            CancelTeleport();
         }
     }
     
@@ -282,21 +247,7 @@ public class PortalController : MonoBehaviour
         Debug.Log("Portal confirmation cancelled");
     }
     
-    // Public methods for external control
-    public void ForceShowConfirmation(GameObject player)
-    {
-        if (!showingConfirmation)
-        {
-            playerInRange = player;
-            ShowConfirmation();
-        }
-    }
-    
-    public void ForceCancelTeleport()
-    {
-        CancelTeleport();
-    }
-    
+    // Public method to check if currently showing confirmation
     public bool IsShowingConfirmation()
     {
         return showingConfirmation;
