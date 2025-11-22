@@ -63,29 +63,4 @@ public class IsometricCameraSetup : MonoBehaviour
         
         transform.position = Vector3.Lerp(transform.position, targetPosition, followSpeed * Time.deltaTime);
     }
-    
-    // Common isometric presets
-    [ContextMenu("True Isometric (35.264°, 45°)")]
-    public void SetTrueIsometric()
-    {
-        xRotation = 35.264f;
-        yRotation = 45f;
-        SetupIsometricCamera();
-    }
-    
-    [ContextMenu("Classic Game Isometric (30°, 45°)")]
-    public void SetClassicIsometric()
-    {
-        xRotation = 30f;
-        yRotation = 45f;
-        SetupIsometricCamera();
-    }
-    
-    [ContextMenu("2:1 Isometric (26.565°, 45°)")]
-    public void Set2to1Isometric()
-    {
-        xRotation = 26.565f;
-        yRotation = 45f;
-        SetupIsometricCamera();
-    }
 }
