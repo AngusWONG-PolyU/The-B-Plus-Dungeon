@@ -125,13 +125,14 @@ public class DungeonRoomUpdater : MonoBehaviour
         }
         
         // Update for child count
-        int childCount = node.Children.Count;
-        UpdateRoomForChildren(childCount);
+        UpdateRoomForChildren(node);
     }
     
     // Update room to show only the required portals based on child count
-    public void UpdateRoomForChildren(int childCount)
+    public void UpdateRoomForChildren(BPlusTreeNode<int, int> node)
     {
+        int childCount = node.Children.Count;
+
         // First deactivate all
         DeactivateAllPortals();
         
@@ -148,8 +149,23 @@ public class DungeonRoomUpdater : MonoBehaviour
             {
                 portal.SetActive(true);
                 
+                // Determine label text
+                string labelText = "";
+                if (i == 0)
+                {
+                    labelText = $"< {node.Keys[0]}";
+                }
+                else if (i == childCount - 1)
+                {
+                    labelText = $"≥ {node.Keys[i - 1]}";
+                }
+                else
+                {
+                    labelText = $"≥ {node.Keys[i - 1]} & < {node.Keys[i]}";
+                }
+
                 // Update the label to show the correct child number
-                UpdatePortalLabel(portal, i + 1); // Display as Child 1, Child 2, etc.
+                UpdatePortalLabel(portal, labelText);
                 
                 // Configure portal controller
                 ConfigurePortal(portal, i);
@@ -306,7 +322,7 @@ public class DungeonRoomUpdater : MonoBehaviour
     }
     
     // Update portal label to show correct child number
-    private void UpdatePortalLabel(GameObject portal, int displayNumber)
+    private void UpdatePortalLabel(GameObject portal, string labelText)
     {
         // Find child label
         string portalNum = portal.name.Replace("Child", "").Replace(" Portal", "").Trim();
@@ -318,7 +334,7 @@ public class DungeonRoomUpdater : MonoBehaviour
             TMPro.TMP_Text tmpText = labelTransform.GetComponent<TMPro.TMP_Text>();
             if (tmpText != null)
             {
-                tmpText.text = "Child " + displayNumber;
+                tmpText.text = labelText;
             }
         }
     }

@@ -30,6 +30,17 @@ public class DungeonMinimap : MonoBehaviour
     public bool autoScale = true; // Automatically scale to fit canvas
     public float canvasPadding = 20f; // Padding from canvas edges
     
+    [Header("Background Settings")]
+    public Sprite backgroundSprite;
+    public Color backgroundColor = new Color(0f, 0f, 0f, 0.5f);
+    public float backgroundPadding = 10f;
+    private GameObject backgroundObj;
+    
+    [Header("Full Map Settings")]
+    public GameObject fullMapMessageText; // Text to show "Press M to see full tree"
+    public bool isFullMapOpen = false;
+    private HashSet<BPlusTreeNode<int, int>> visitedNodes = new HashSet<BPlusTreeNode<int, int>>();
+    
     private List<GameObject> displayedNodes = new List<GameObject>();
     private List<GameObject> displayedLines = new List<GameObject>();
     [System.NonSerialized]
@@ -42,6 +53,7 @@ public class DungeonMinimap : MonoBehaviour
         if (minimapCanvas == null)
         {
             minimapCanvas = GetComponent<Canvas>();
+            if (minimapCanvas == null) minimapCanvas = GetComponentInParent<Canvas>();
         }
         
         if (minimapContainer == null)
@@ -49,7 +61,22 @@ public class DungeonMinimap : MonoBehaviour
             minimapContainer = transform;
         }
         
+        // Ensure text is hidden at start
+        if (fullMapMessageText != null)
+        {
+            fullMapMessageText.SetActive(false);
+        }
+        
         RefreshMinimap();
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            isFullMapOpen = !isFullMapOpen;
+            RefreshMinimap();
+        }
     }
 
     // Called when player enters a child node (portal)
@@ -63,6 +90,8 @@ public class DungeonMinimap : MonoBehaviour
         
         currentNode = currentNode.Children[childIndex];
         isAtLeaf = currentNode.IsLeaf;
+        visitedNodes.Add(currentNode);
+        isFullMapOpen = false;
         RefreshMinimap();
     }
     
@@ -73,6 +102,8 @@ public class DungeonMinimap : MonoBehaviour
         targetKey = target;
         currentNode = tree.Root;
         isAtLeaf = false;
+        visitedNodes.Clear();
+        if (currentNode != null) visitedNodes.Add(currentNode);
         RefreshMinimap();
     }
 
@@ -81,46 +112,104 @@ public class DungeonMinimap : MonoBehaviour
     {
         ClearMinimap();
         
+        // Reset container state to ensure clean calculations
+        minimapContainer.localScale = Vector3.one;
+        minimapContainer.localRotation = Quaternion.identity;
+        RectTransform containerRect = minimapContainer.GetComponent<RectTransform>();
+        if (containerRect != null) containerRect.anchoredPosition = Vector2.zero;
+        else minimapContainer.localPosition = Vector3.zero;
+        
         if (dungeonTree == null || currentNode == null)
         {
+            if (fullMapMessageText != null) fullMapMessageText.SetActive(false);
             Debug.LogWarning("DungeonMinimap: No tree to display");
             return;
         }
 
-        if (isAtLeaf)
+        // Update Text
+        if (fullMapMessageText != null)
         {
-            DisplayLeafStatus();
+            fullMapMessageText.SetActive(true);
+            string msg = isFullMapOpen ? "Press M to close the full tree" : "Press M to see the full tree";
+            
+            Text txt = fullMapMessageText.GetComponent<Text>();
+            if (txt != null)
+            {
+                txt.text = msg;
+                txt.horizontalOverflow = HorizontalWrapMode.Overflow;
+                txt.verticalOverflow = VerticalWrapMode.Overflow;
+                txt.alignment = TextAnchor.MiddleCenter;
+            }
+            else
+            {
+                TMPro.TMP_Text tmp = fullMapMessageText.GetComponent<TMPro.TMP_Text>();
+                if (tmp != null)
+                {
+                    tmp.text = msg;
+                    tmp.enableWordWrapping = false;
+                    tmp.alignment = TMPro.TextAlignmentOptions.Center;
+                }
+            }
+        }
+
+        if (isFullMapOpen)
+        {
+            DisplayFullTree();
+            ScaleToFitCanvas(true); // Center it
         }
         else
         {
-            DisplayCurrentAndChildren(currentNode);
-        }
-        
-        // Auto-scale to fit canvas
-        if (autoScale)
-        {
-            ScaleToFitCanvas();
+            if (isAtLeaf)
+            {
+                // No nodes displayed.
+                // Just position the text.
+                PositionTextOnly();
+            }
+            else
+            {
+                DisplayCurrentAndChildren(currentNode);
+                ScaleToFitCanvas(false); // Top-right
+            }
         }
     }
 
-    // Displays message when player reaches a leaf node
-    private void DisplayLeafStatus()
-    {
-        // Show the entire tree structure when at leaf
-        DisplayFullTree();
-    }
-    
-    // TODO: Fix node overlap issue
     // Display entire B+ tree structure from root
     private void DisplayFullTree()
     {
         if (dungeonTree == null || dungeonTree.Root == null) return;
         
-        DisplayTreeRecursive(dungeonTree.Root, 0, 0, 200f);
+        // Calculate subtree widths first to prevent overlap
+        Dictionary<BPlusTreeNode<int, int>, float> subtreeWidths = new Dictionary<BPlusTreeNode<int, int>, float>();
+        CalculateSubtreeWidth(dungeonTree.Root, subtreeWidths);
+        
+        DisplayTreeRecursive(dungeonTree.Root, 0, 0, subtreeWidths);
+    }
+    
+    // Calculate width of each subtree
+    private float CalculateSubtreeWidth(BPlusTreeNode<int, int> node, Dictionary<BPlusTreeNode<int, int>, float> widths)
+    {
+        if (node == null) return 0;
+        
+        float width = 0;
+        
+        if (node.IsLeaf || node.Children.Count == 0)
+        {
+            width = nodeSize.x + 20f;
+        }
+        else
+        {
+            foreach (var child in node.Children)
+            {
+                width += CalculateSubtreeWidth(child, widths);
+            }
+        }
+        
+        widths[node] = width;
+        return width;
     }
     
     // Recursively display tree nodes
-    private void DisplayTreeRecursive(BPlusTreeNode<int, int> node, int level, float xPosition, float spacing)
+    private void DisplayTreeRecursive(BPlusTreeNode<int, int> node, int level, float xPosition, Dictionary<BPlusTreeNode<int, int>, float> subtreeWidths)
     {
         if (node == null) return;
         
@@ -137,15 +226,14 @@ public class DungeonMinimap : MonoBehaviour
         // Display children
         if (!node.IsLeaf && node.Children.Count > 0)
         {
-            float childSpacing = spacing / node.Children.Count;
-            float startX = xPosition - (spacing / 2f) + (childSpacing / 2f);
+            float currentX = xPosition - (subtreeWidths[node] / 2f);
             
-            for (int i = 0; i < node.Children.Count; i++)
+            foreach (var child in node.Children)
             {
-                float childX = startX + (i * childSpacing);
-                BPlusTreeNode<int, int> child = node.Children[i];
+                float childWidth = subtreeWidths[child];
+                float childX = currentX + (childWidth / 2f);
                 
-                DisplayTreeRecursive(child, level + 1, childX, childSpacing);
+                DisplayTreeRecursive(child, level + 1, childX, subtreeWidths);
                 
                 // Draw connection line
                 if (nodeToGameObject.ContainsKey(child))
@@ -156,6 +244,8 @@ public class DungeonMinimap : MonoBehaviour
                     Vector2 toPoint = new Vector2(toPos.x, toPos.y + nodeSize.y / 2);
                     CreateConnectionLine(fromPoint, toPoint);
                 }
+                
+                currentX += childWidth;
             }
         }
     }
@@ -169,6 +259,8 @@ public class DungeonMinimap : MonoBehaviour
         GameObject currentNodeObj = CreateNodeDisplay(node, currentPosition, true);
         nodeToGameObject[node] = currentNodeObj;
         
+        if (node.IsLeaf || node.Children == null) return;
+
         // Display children nodes above (upward = forward)
         int childCount = node.Children.Count;
         float totalWidth = (childCount - 1) * nodeSpacing;
@@ -235,7 +327,8 @@ public class DungeonMinimap : MonoBehaviour
             RectTransform rect = nodeObj.AddComponent<RectTransform>();
             rect.sizeDelta = nodeSize;
             
-            Color borderColor = isCurrent ? currentNodeColor : normalNodeColor;
+            bool isVisited = visitedNodes.Contains(node);
+            Color borderColor = isCurrent ? currentNodeColor : (isVisited ? currentNodeColor : normalNodeColor);
             
             // Create 4 border lines (top, bottom, left, right)
             CreateBorderLine(nodeObj, new Vector2(0, nodeSize.y / 2), new Vector2(nodeSize.x, outlineThickness), borderColor); // Top
@@ -335,6 +428,8 @@ public class DungeonMinimap : MonoBehaviour
     // Clears all displayed minimap elements
     private void ClearMinimap()
     {
+        if (backgroundObj != null) backgroundObj.SetActive(false);
+
         foreach (GameObject obj in displayedNodes)
         {
             Destroy(obj);
@@ -353,14 +448,16 @@ public class DungeonMinimap : MonoBehaviour
     // Public method to clear minimap (called when exiting dungeon)
     public void ClearMinimapPublic()
     {
+        if (fullMapMessageText != null) fullMapMessageText.SetActive(false);
         ClearMinimap();
         dungeonTree = null;
         currentNode = null;
         isAtLeaf = false;
+        isFullMapOpen = false;
     }
     
     // Scale minimap to fit within canvas bounds and align to top-right corner
-    private void ScaleToFitCanvas()
+    private void ScaleToFitCanvas(bool center)
     {
         if (minimapCanvas == null || displayedNodes.Count == 0) return;
         
@@ -383,6 +480,9 @@ public class DungeonMinimap : MonoBehaviour
             maxY = Mathf.Max(maxY, pos.y + size.y / 2);
         }
         
+        // Update background to fit content
+        UpdateBackground(minX, maxX, minY, maxY);
+        
         float contentWidth = maxX - minX;
         float contentHeight = maxY - minY;
         
@@ -393,6 +493,7 @@ public class DungeonMinimap : MonoBehaviour
         float scaleX = contentWidth > 0 ? availableWidth / contentWidth : 1f;
         float scaleY = contentHeight > 0 ? availableHeight / contentHeight : 1f;
         float scale = Mathf.Min(scaleX, scaleY, 1f); // Don't scale up, only down
+        scale = Mathf.Max(scale, 0.1f); // Prevent too small scale
         
         // Apply scale to container
         minimapContainer.localScale = new Vector3(scale, scale, 1f);
@@ -402,16 +503,136 @@ public class DungeonMinimap : MonoBehaviour
         float scaledWidth = contentWidth * scale;
         float scaledHeight = contentHeight * scale;
         
-        // Position so top-right of content aligns to top-right of canvas minus padding
-        // Canvas top-right is at (canvasSize.x/2, canvasSize.y/2)
-        float targetX = (canvasSize.x / 2) - canvasPadding - scaledWidth;
-        float targetY = (canvasSize.y / 2) - canvasPadding - scaledHeight;
+        float targetX, targetY;
+
+        if (center)
+        {
+            // Center the content   
+            targetX = -(minX + contentWidth / 2f) * scale;
+            targetY = -(minY + contentHeight / 2f) * scale;
+        }
+        else
+        {
+            // Position so top-right of content aligns to top-right of canvas minus padding
+            // Canvas top-right is at (canvasSize.x/2, canvasSize.y/2)
+            float rightEdge = (canvasSize.x / 2) - canvasPadding;
+            float topEdge = (canvasSize.y / 2) - canvasPadding;
+
+            targetX = rightEdge - maxX * scale;
+            targetY = topEdge - maxY * scale;
+        }
         
         RectTransform containerRect = minimapContainer.GetComponent<RectTransform>();
         if (containerRect != null)
         {
-            // Offset by the content's min position (scaled) to align properly
-            containerRect.anchoredPosition = new Vector2(targetX - minX * scale, targetY - minY * scale);
+            containerRect.anchoredPosition = new Vector2(targetX, targetY);
         }
+        
+        // Position Text
+        if (fullMapMessageText != null)
+        {
+            RectTransform textRect = fullMapMessageText.GetComponent<RectTransform>();
+            if (textRect != null)
+            {
+                // Reset text size to ensure consistency
+                textRect.sizeDelta = new Vector2(300, 50);
+
+                // Calculate bottom center of the map content
+                float centerX = (minX + maxX) / 2f;
+                float bottomY = minY;
+                float padding = 30f;
+
+                // It is a child, so coordinates are local to container
+                // We need to counter-scale the text so it stays same size
+                float invScale = scale > 0 ? 1f / scale : 1f;
+                textRect.localScale = new Vector3(invScale, invScale, 1f);
+                
+                // Position relative to content bottom
+                // We want it 'padding' units below bottomY visually
+                // In local space, that is bottomY - (padding * invScale)
+                textRect.anchoredPosition = new Vector2(centerX, bottomY - (padding * invScale));
+            }
+        }
+    }
+
+    private void PositionTextOnly()
+    {
+        if (minimapCanvas == null || fullMapMessageText == null) return;
+        
+        // Reset container
+        minimapContainer.localScale = Vector3.one;
+        
+        RectTransform canvasRect = minimapCanvas.GetComponent<RectTransform>();
+        Vector2 canvasSize = canvasRect.sizeDelta;
+        
+        // Top right
+        float rightEdge = (canvasSize.x / 2) - canvasPadding;
+        float topEdge = (canvasSize.y / 2) - canvasPadding;
+        
+        RectTransform containerRect = minimapContainer.GetComponent<RectTransform>();
+        if (containerRect != null)
+        {
+            containerRect.anchoredPosition = new Vector2(rightEdge, topEdge);
+        }
+        else
+        {
+            // Fallback if container is just a Transform (though it should be RectTransform in UI)
+            minimapContainer.localPosition = new Vector3(rightEdge, topEdge, 0);
+        }
+        
+        RectTransform textRect = fullMapMessageText.GetComponent<RectTransform>();
+        if (textRect != null)
+        {
+            textRect.localScale = Vector3.one;
+            
+            // Ensure text is wide enough
+            Vector2 textSize = new Vector2(300, 50);
+            textRect.sizeDelta = textSize;
+            
+            // Position text slightly down and left from the corner anchor
+            Vector2 textPos = new Vector2(-textSize.x / 2, -textSize.y / 2);
+            textRect.anchoredPosition = textPos;
+            
+            // Add background behind text
+            float minX = textPos.x - textSize.x / 2;
+            float maxX = textPos.x + textSize.x / 2;
+            float minY = textPos.y - textSize.y / 2;
+            float maxY = textPos.y + textSize.y / 2;
+            
+            UpdateBackground(minX, maxX, minY, maxY);
+        }
+    }
+
+    private void UpdateBackground(float minX, float maxX, float minY, float maxY)
+    {
+        if (backgroundObj == null)
+        {
+            backgroundObj = new GameObject("MapBackground");
+            backgroundObj.transform.SetParent(minimapContainer, false);
+            Image img = backgroundObj.AddComponent<Image>();
+            img.color = backgroundColor;
+            if (backgroundSprite != null) img.sprite = backgroundSprite;
+            else 
+            {
+                // Create default white sprite if none provided
+                Texture2D tex = new Texture2D(1, 1);
+                tex.SetPixel(0, 0, Color.white);
+                tex.Apply();
+                img.sprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+            }
+        }
+        
+        // Ensure it's at the back
+        backgroundObj.transform.SetAsFirstSibling();
+        backgroundObj.SetActive(true);
+        
+        RectTransform rect = backgroundObj.GetComponent<RectTransform>();
+        float width = (maxX - minX) + (backgroundPadding * 2);
+        float height = (maxY - minY) + (backgroundPadding * 2);
+        float centerX = (minX + maxX) / 2f;
+        float centerY = (minY + maxY) / 2f;
+        
+        rect.sizeDelta = new Vector2(width, height);
+        rect.anchoredPosition = new Vector2(centerX, centerY);
     }
 }

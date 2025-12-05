@@ -44,15 +44,28 @@ public class DungeonGenerator : MonoBehaviour
         dungeonTree = new BPlusTree<int, int>(treeOrder);
         Debug.Log($"Step 1: Created B+ Tree with order {treeOrder}");
         
-        // Step 2: Insert keys into the tree
-        for (int i = 0; i < numberOfKeys; i++)
-        {
-            dungeonTree.Insert(i, i);
-        }
-        Debug.Log($"Step 2: Inserted {numberOfKeys} keys into tree");
+        // Step 2: Insert keys into tree
+        List<int> generatedKeys = new List<int>();
+        HashSet<int> usedKeys = new HashSet<int>();
         
-        // Step 3: Choose a random target key
-        targetRoomKey = Random.Range(0, numberOfKeys);
+        // Generate unique random keys
+        while (generatedKeys.Count < numberOfKeys)
+        {
+            // Generate a random key between 1 and 100 (or adjust range based on count)
+            int maxRange = Mathf.Max(100, numberOfKeys * 5);
+            int randomKey = Random.Range(1, maxRange);
+            
+            if (!usedKeys.Contains(randomKey))
+            {
+                usedKeys.Add(randomKey);
+                generatedKeys.Add(randomKey);
+                dungeonTree.Insert(randomKey, randomKey);
+            }
+        }
+        Debug.Log($"Step 2: Inserted {numberOfKeys} random keys into tree: {string.Join(", ", generatedKeys)}");
+        
+        // Step 3: Choose a random target key from the generated keys
+        targetRoomKey = generatedKeys[Random.Range(0, generatedKeys.Count)];
         
         // Step 4: Get the correct search path to the target
         correctSearchPath = dungeonTree.GetSearchIndices(targetRoomKey);
