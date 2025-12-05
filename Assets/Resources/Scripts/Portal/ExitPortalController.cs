@@ -196,6 +196,12 @@ public class ExitPortalController : MonoBehaviour
             dungeonMinimap.ClearMinimapPublic();
         }
         
+        // Clear room updater UI
+        if (dungeonGenerator != null && dungeonGenerator.roomUpdater != null)
+        {
+            dungeonGenerator.roomUpdater.OnExitDungeon();
+        }
+        
         // Reset dungeon so it regenerates on next entry
         if (dungeonGenerator != null)
         {

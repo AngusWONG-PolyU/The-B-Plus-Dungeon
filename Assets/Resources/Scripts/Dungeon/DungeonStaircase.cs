@@ -67,7 +67,7 @@ public class DungeonStaircase : MonoBehaviour
         
         isTeleporting = true;
         
-        // FORCEFULLY stop all movement to prevent sliding
+        // Forcefully stop all movement to prevent sliding
         CharacterMovement playerMovement = player.GetComponent<CharacterMovement>();
         UnityEngine.AI.NavMeshAgent navAgent = player.GetComponent<UnityEngine.AI.NavMeshAgent>();
         
@@ -150,11 +150,10 @@ public class DungeonStaircase : MonoBehaviour
         {
             dungeonGenerator.GenerateDungeon();
             
-            // Notify room updater that player entered by staircase
-            DungeonRoomUpdater roomUpdater = dungeonGenerator.roomUpdater;
-            if (roomUpdater != null)
+            // Ensure UI is visible when entering via staircase
+            if (dungeonGenerator.roomUpdater != null)
             {
-                roomUpdater.SetEnteredByStaircase();
+                dungeonGenerator.roomUpdater.OnEnterPortalsRoom();
             }
         }
         else

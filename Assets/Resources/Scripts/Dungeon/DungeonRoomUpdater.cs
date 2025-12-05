@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class DungeonRoomUpdater : MonoBehaviour
 {
@@ -14,15 +15,13 @@ public class DungeonRoomUpdater : MonoBehaviour
     [Header("Room References")]
     public Transform nextRoomSpawn; // Where to teleport for correct portal
     public Transform leafRoomSpawn; // Where to teleport when next room is leaf
-    public GameObject dungeonStaircase; // Staircase entrance (for tutorial)
-    public GameObject portalSpawn; // Portal spawn point (for normal loop)
     
     [Header("References")]
     public DungeonMinimap minimap;
     public DungeonManager dungeonManager; // Handles hearts, win/lose
     
     [Header("UI")]
-    public TMPro.TMP_Text TargetText; // Text component
+    public TextMeshProUGUI targetText; // Text component
     
     // Current node tracking (runtime only - not serialized)
     [System.NonSerialized]
@@ -32,10 +31,11 @@ public class DungeonRoomUpdater : MonoBehaviour
     [System.NonSerialized]
     private int currentPathIndex = 0;
     
-    private bool enteredByStaircase = false; // Track if player entered via staircase
-    
     void Start()
     {
+        // Deactivate UI initially
+        SetUIVisibility(false);
+
         // Deactivate all portals initially
         DeactivateAllPortals();
     }
@@ -49,26 +49,34 @@ public class DungeonRoomUpdater : MonoBehaviour
         UpdateRoomForNode(currentNode);
     }
     
-    // Set target key to display in UI
-    public void SetTargetKey(int targetKey)
+    // Helper to control UI visibility
+    public void SetUIVisibility(bool visible)
     {
-        if (TargetText != null)
+        // Target Text
+        if (targetText != null)
         {
-            TargetText.text = $"Target: {targetKey}";
-            TargetText.color = new Color(0.5f, 1f, 0.5f); // Light green color for target
+            targetText.gameObject.SetActive(visible);
+        }
+        
+        // Minimap
+        if (minimap != null)
+        {
+            if (minimap.minimapContainer != null)
+            {
+                minimap.minimapContainer.gameObject.SetActive(visible);
+            }
         }
     }
     
-    // Called by DungeonStaircase when player enters via staircase (tutorial mode)
-    public void SetEnteredByStaircase()
+    // Set target key to display in UI
+    public void SetTargetKey(int targetKey)
     {
-        enteredByStaircase = true;
-        
-        // Activate staircase, deactivate portal spawn
-        if (dungeonStaircase != null) dungeonStaircase.SetActive(true);
-        if (portalSpawn != null) portalSpawn.SetActive(false);
-        
-        Debug.Log("Player entered by staircase - Tutorial mode activated");
+        if (targetText != null)
+        {
+            targetText.gameObject.SetActive(true);
+            targetText.text = $"Target: {targetKey}";
+            targetText.color = new Color(0.5f, 1f, 0.5f); // Light green color for target
+        }
     }
     
     // Deactivate all child portals
@@ -120,6 +128,17 @@ public class DungeonRoomUpdater : MonoBehaviour
         if (node.IsLeaf)
         {
             DeactivateAllPortals();
+            
+            // Show UI (Minimap and Target Text)
+            SetUIVisibility(true);
+            
+            // Update Target Text to indicate target found
+            if (targetText != null)
+            {
+                targetText.text = "Target Found!";
+                targetText.color = Color.yellow;
+            }
+            
             Debug.Log("Reached leaf node - no more portals");
             return;
         }
@@ -222,6 +241,19 @@ public class DungeonRoomUpdater : MonoBehaviour
         }
     }
     
+    // Called when player enters the portals room
+    public void OnEnterPortalsRoom()
+    {
+        // Show UI again
+        SetUIVisibility(true);
+    }
+    
+    // Called when player exits the dungeon entirely
+    public void OnExitDungeon()
+    {
+        SetUIVisibility(false);
+    }
+
     // Called by DungeonPortalController when player selects a portal
     public void OnPlayerSelectPortal(int childIndex, DungeonPortalController portal)
     {
@@ -240,8 +272,8 @@ public class DungeonRoomUpdater : MonoBehaviour
         
         if (isCorrect)
         {
-            // Switch from staircase to portal spawn IMMEDIATELY when the correct portal is selected
-            SwitchToPortalSpawn();
+            // Hide UI when leaving the portals room
+            SetUIVisibility(false);
             
             // Correct portal - teleport player
             portal.TeleportPlayer();
@@ -339,27 +371,4 @@ public class DungeonRoomUpdater : MonoBehaviour
         }
     }
     
-    // Switch from staircase to portal spawn after first teleport
-    private void SwitchToPortalSpawn()
-    {
-        if (enteredByStaircase)
-        {
-            enteredByStaircase = false;
-            
-            // Deactivate staircase, activate portal spawn
-            if (dungeonStaircase != null)
-            {
-                dungeonStaircase.SetActive(false);
-                Debug.Log("DungeonStaircase deactivated");
-            }
-            
-            if (portalSpawn != null)
-            {
-                portalSpawn.SetActive(true);
-                Debug.Log("Portal spawn activated");
-            }
-            
-            Debug.Log("Switched to portal spawn mode - all future teleports use portal spawn");
-        }
-    }
 }

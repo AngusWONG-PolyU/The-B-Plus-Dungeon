@@ -20,6 +20,8 @@ public class CharacterMovement : MonoBehaviour
     public GameObject targetEffect;
     private ParticleSystem targetEffectSystem;
     
+    private bool isLocked = false; // Flag to track if player is locked
+    
     void Start()
     {
         playerCamera = Camera.main;
@@ -49,6 +51,14 @@ public class CharacterMovement : MonoBehaviour
 
     void Update()
     {
+        // If locked, prevent movement input and stop agent
+        if (isLocked)
+        {
+            if (navAgent != null && navAgent.enabled) navAgent.ResetPath();
+            SetRunningAnimation(false);
+            return;
+        }
+
         // Check for left mouse button click
         if (Input.GetMouseButtonDown(0))
         {
@@ -169,6 +179,23 @@ public class CharacterMovement : MonoBehaviour
         
         SetRunningAnimation(false);
         Debug.Log("Character movement stopped by external script");
+    }
+
+    // Public method to lock/unlock player movement
+    public void SetLocked(bool locked)
+    {
+        isLocked = locked;
+        if (isLocked)
+        {
+            // Stop immediately when locked
+            if (navAgent != null && navAgent.enabled) navAgent.ResetPath();
+            SetRunningAnimation(false);
+            Debug.Log("Player movement LOCKED");
+        }
+        else
+        {
+            Debug.Log("Player movement UNLOCKED");
+        }
     }
     
     // Public method to resume movement capability
