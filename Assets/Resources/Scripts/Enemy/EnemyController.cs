@@ -5,15 +5,15 @@ using UnityEngine;
 public class EnemyController : MonoBehaviour
 {
     [Header("Stats")]
-    public float attackRange = 5f;
-    public float detectionRange = 10f;
     public int maxHealth = 3;
-    public float castDuration = 2.0f; // Duration to cast before the magic appears
+    public float detectionRange = 10f;
+    
+    [Header("Skills")]
+    public SkillData attackSkill;
+    public SkillData lockSkill;
     
     [Header("References")]
     public Transform player;
-    public GameObject lockMagicPrefab; // Prefab to lock the player
-    public GameObject attackMagicPrefab; // Prefab to damage the player
     
     private Animator animator;
     private bool isDead = false;
@@ -46,11 +46,11 @@ public class EnemyController : MonoBehaviour
         // Manual Cast Testing
         if (Input.GetKeyDown(KeyCode.L))
         {
-            StartCoroutine(CastMagicRoutine(true)); // Cast Lock
+            if (lockSkill != null) StartCoroutine(CastMagicRoutine(lockSkill));
         }
         if (Input.GetKeyDown(KeyCode.A))
         {
-            StartCoroutine(CastMagicRoutine(false)); // Cast Attack
+            if (attackSkill != null) StartCoroutine(CastMagicRoutine(attackSkill));
         }
         
         // Destroy Magic Test
@@ -120,65 +120,61 @@ public class EnemyController : MonoBehaviour
 
     void Attack()
     {
-        if (isAttacking) return; // Don't start a new attack if already casting
+        if (isAttacking || attackSkill == null) return;
         
-        StartCoroutine(CastMagicRoutine(false));
+        StartCoroutine(CastMagicRoutine(attackSkill));
     }
 
-    IEnumerator CastMagicRoutine(bool isLockMagic)
+    IEnumerator CastMagicRoutine(SkillData skill)
     {
         isAttacking = true;
         
         if (animator != null)
         {
-            // Start looping animation
             animator.SetBool("isCasting", true);
         }
         
-        // Wait for the cast duration (animation loops during this time)
-        yield return new WaitForSeconds(castDuration);
+        // Wait for the cast duration from SkillData
+        yield return new WaitForSeconds(skill.castTime);
         
-        // Choose magic based on parameter
-        GameObject magicToSpawn = isLockMagic ? lockMagicPrefab : attackMagicPrefab;
-
-        // Spawn the magic at the player's position
-        if (magicToSpawn != null && player != null)
+        // Spawn the magic
+        if (skill.skillPrefab != null && player != null)
         {
             // Destroy previous magic if it exists
             if (currentActiveMagic != null) 
             {
                 Destroy(currentActiveMagic);
-                // If we are destroying old magic, make sure to unlock player just in case
                 CharacterMovement cm = player.GetComponent<CharacterMovement>();
                 if (cm != null) cm.SetLocked(false);
             }
             
-            currentActiveMagic = Instantiate(magicToSpawn, player.position, Quaternion.identity);
+            currentActiveMagic = Instantiate(skill.skillPrefab, player.position, Quaternion.identity);
             
-            // If it is Lock Magic, lock the player
-            if (isLockMagic)
+            // Initialize Projectile
+            if (currentActiveMagic != null)
+            {
+                SpellProjectile proj = currentActiveMagic.GetComponent<SpellProjectile>();
+                if (proj != null) proj.SetCaster("Enemy");
+            }
+            
+            // If this is the Lock Skill, lock the player
+            if (skill == lockSkill)
             {
                 CharacterMovement cm = player.GetComponent<CharacterMovement>();
                 if (cm != null)
                 {
-                    // Stop movement first so they don't slide away from the magic
                     cm.StopMovement();
                     cm.SetLocked(true);
                 }
             }
         }
-        else
-        {
-            Debug.Log($"Magic Cast! Type: {(isLockMagic ? "Lock" : "Attack")}");
-        }
         
         if (animator != null)
         {
-            // Stop looping animation
             animator.SetBool("isCasting", false);
         }
         
-        // Small cooldown before next cast
+        // Small cooldown
         yield return new WaitForSeconds(1f);
         
         isAttacking = false;

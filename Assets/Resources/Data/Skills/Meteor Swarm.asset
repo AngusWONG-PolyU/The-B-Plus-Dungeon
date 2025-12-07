@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5bc7d9aa55f2a4182980cb8ea63aa851, type: 3}
+  m_Name: Meteor Swarm
+  m_EditorClassIdentifier: 
+  skillName: Meteor Swarm
+  icon: {fileID: 21300000, guid: eb032f0fd4f404336b3f7c95f979a570, type: 3}
+  description: 
+  aimType: 0
+  cooldown: 1
+  range: 10
+  castTime: 0.2
+  skillPrefab: {fileID: 7957833072274404953, guid: 3355f6bfa6db8b24281b827de929694c, type: 3}
+  rotationOffset: {x: 0, y: 0, z: 0}

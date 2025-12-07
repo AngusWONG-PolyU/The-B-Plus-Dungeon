@@ -94,31 +94,35 @@ public class CharacterMovement : MonoBehaviour
                 // Start the running animation if it's moving
                 SetRunningAnimation(true);
                 
-                // Get character's current screen position
-                Vector3 characterScreenPos = playerCamera.WorldToScreenPoint(character.position);
-                // Get the target's screen position
-                Vector3 targetScreenPos = playerCamera.WorldToScreenPoint(targetPosition);
-        
-                // Flip the Character scale
-                if (character != null)
-                {
-                    Vector3 currentScale = character.localScale;
-            
-                    if (targetScreenPos.x > characterScreenPos.x)
-                    {
-                        // Target on the right - face right (flip X scale)
-                        character.localScale = new Vector3(-Mathf.Abs(currentScale.x), currentScale.y, currentScale.z);
-                    }
-                    else
-                    {
-                        // Target on the left - face left (normal scale)
-                        character.localScale = new Vector3(Mathf.Abs(currentScale.x), currentScale.y, currentScale.z);
-                    }
-                }
+                FaceTarget(targetPosition);
         
                 // Keep the original camera-facing rotation
                 transform.rotation = baseCameraRotation;
             }
+        }
+    }
+
+    // Public method to face a target position
+    public void FaceTarget(Vector3 targetWorldPos)
+    {
+        if (character == null || playerCamera == null) return;
+
+        // Get character's current screen position
+        Vector3 characterScreenPos = playerCamera.WorldToScreenPoint(character.position);
+        // Get the target's screen position
+        Vector3 targetScreenPos = playerCamera.WorldToScreenPoint(targetWorldPos);
+
+        Vector3 currentScale = character.localScale;
+
+        if (targetScreenPos.x > characterScreenPos.x)
+        {
+            // Target on the right - face right (flip X scale)
+            character.localScale = new Vector3(-Mathf.Abs(currentScale.x), currentScale.y, currentScale.z);
+        }
+        else
+        {
+            // Target on the left - face left (normal scale)
+            character.localScale = new Vector3(Mathf.Abs(currentScale.x), currentScale.y, currentScale.z);
         }
     }
 
