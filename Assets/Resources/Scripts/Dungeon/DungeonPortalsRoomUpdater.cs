@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-public class DungeonRoomUpdater : MonoBehaviour
+public class DungeonPortalsRoomUpdater : MonoBehaviour
 {
     [Header("Portal Configuration")]
     public GameObject child1Portal;
@@ -13,15 +13,12 @@ public class DungeonRoomUpdater : MonoBehaviour
     public GameObject child5Portal;
     
     [Header("Room References")]
-    public Transform nextRoomSpawn; // Where to teleport for correct portal
-    public Transform leafRoomSpawn; // Where to teleport when next room is leaf
+    public Transform nextRoomSpawn; // Where to teleport for the correct portal
     
     [Header("References")]
     public DungeonMinimap minimap;
     public DungeonManager dungeonManager; // Handles hearts, win/lose
-    
-    [Header("UI")]
-    public TextMeshProUGUI targetText; // Text component
+    public DungeonUIManager dungeonUI;
     
     // Current node tracking (runtime only - not serialized)
     [System.NonSerialized]
@@ -33,6 +30,11 @@ public class DungeonRoomUpdater : MonoBehaviour
     
     void Start()
     {
+        if (dungeonUI == null)
+        {
+            dungeonUI = FindObjectOfType<DungeonUIManager>();
+        }
+
         // Deactivate UI initially
         SetUIVisibility(false);
 
@@ -52,30 +54,21 @@ public class DungeonRoomUpdater : MonoBehaviour
     // Helper to control UI visibility
     public void SetUIVisibility(bool visible)
     {
-        // Target Text
-        if (targetText != null)
+        if (dungeonUI != null)
         {
-            targetText.gameObject.SetActive(visible);
-        }
-        
-        // Minimap
-        if (minimap != null)
-        {
-            if (minimap.minimapContainer != null)
-            {
-                minimap.minimapContainer.gameObject.SetActive(visible);
-            }
+            dungeonUI.SetTargetVisibility(visible);
+            dungeonUI.SetMinimapVisibility(visible);
         }
     }
     
     // Set target key to display in UI
     public void SetTargetKey(int targetKey)
     {
-        if (targetText != null)
+        if (dungeonUI != null)
         {
-            targetText.gameObject.SetActive(true);
-            targetText.text = $"Target: {targetKey}";
-            targetText.color = new Color(0.5f, 1f, 0.5f); // Light green color for target
+            dungeonUI.SetTargetVisibility(true);
+            dungeonUI.SetTargetText($"Target: {targetKey}");
+            dungeonUI.SetTargetColor(new Color(0.5f, 1f, 0.5f)); // Light green color for target
         }
     }
     
@@ -129,22 +122,27 @@ public class DungeonRoomUpdater : MonoBehaviour
         {
             DeactivateAllPortals();
             
-            // Show UI (Minimap and Target Text)
-            SetUIVisibility(true);
-            
-            // Update Target Text to indicate target found
-            if (targetText != null)
-            {
-                targetText.text = "Target Found!";
-                targetText.color = Color.yellow;
-            }
-            
-            Debug.Log("Reached leaf node - no more portals");
+            Debug.Log("Reached leaf node logic - waiting for player to clear Boss Room.");
             return;
         }
         
         // Update for child count
         UpdateRoomForChildren(node);
+    }
+
+    public void ShowTargetFoundUI()
+    {
+        // Show UI (Minimap and Target Text)
+        SetUIVisibility(true);
+        
+        // Update Target Text to indicate target found
+        if (dungeonUI != null)
+        {
+            dungeonUI.SetTargetText("Target Found!");
+            dungeonUI.SetTargetColor(Color.yellow);
+        }
+        
+        Debug.Log("Target Found UI Shown!");
     }
     
     // Update room to show only the required portals based on child count
@@ -191,7 +189,7 @@ public class DungeonRoomUpdater : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"Portal {portalNumber} reference not assigned in DungeonRoomUpdater!");
+                Debug.LogWarning($"Portal {portalNumber} reference not assigned in DungeonPortalsRoomUpdater!");
             }
         }
     }
@@ -216,18 +214,9 @@ public class DungeonRoomUpdater : MonoBehaviour
         
         // Configure the controller
         controller.childIndex = childIndex;
-        controller.dungeonRoomUpdater = this;
+        controller.dungeonPortalsRoomUpdater = this;
         
-        // Check if the child node is a leaf, use leafRoomSpawn if so
-        if (currentNode != null && childIndex < currentNode.Children.Count)
-        {
-            BPlusTreeNode<int, int> childNode = currentNode.Children[childIndex];
-            controller.teleportDestination = (childNode.IsLeaf && leafRoomSpawn != null) ? leafRoomSpawn : nextRoomSpawn;
-        }
-        else
-        {
-            controller.teleportDestination = nextRoomSpawn;
-        }
+        controller.teleportDestination = nextRoomSpawn;
         
         controller.ResetPortal(); // Reset state
         
@@ -241,7 +230,15 @@ public class DungeonRoomUpdater : MonoBehaviour
         }
     }
     
-    // Called when player enters the portals room
+    // Check if we should spawn the Boss Room
+    public bool ShouldSpawnBossRoom()
+    {
+        if (correctSearchPath == null) return false;
+        
+        return currentPathIndex == correctSearchPath.Length - 1;
+    }
+
+    // Called when the player enters the portals room
     public void OnEnterPortalsRoom()
     {
         // Show UI again
@@ -317,7 +314,7 @@ public class DungeonRoomUpdater : MonoBehaviour
             }
         }
         
-        // Deactivate all portals before updating room
+        // Deactivate all portals before updating the room
         DeactivateAllPortals();
         
         // Update room portals (will reactivate and reconfigure the needed ones)
@@ -370,5 +367,4 @@ public class DungeonRoomUpdater : MonoBehaviour
             }
         }
     }
-    
 }

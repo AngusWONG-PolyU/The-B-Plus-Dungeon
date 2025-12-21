@@ -146,8 +146,7 @@ public class PortalController : MonoBehaviour
         IsometricCameraSetup cameraSetup = FindObjectOfType<IsometricCameraSetup>();
         if (cameraSetup != null)
         {
-            Vector3 offset = new Vector3(-cameraSetup.distance, cameraSetup.height, -cameraSetup.distance);
-            Camera.main.transform.position = finalPosition + offset;
+            cameraSetup.SnapToTarget();
         }
         
         // Wait a frame for position to sync

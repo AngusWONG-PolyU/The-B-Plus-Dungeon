@@ -10,8 +10,16 @@ public class DungeonGenerator : MonoBehaviour
     
     [Header("References")]
     public DungeonMinimap minimap; // Reference to the minimap
-    public DungeonRoomUpdater roomUpdater; // Reference to the room updater
+    public DungeonPortalsRoomUpdater roomUpdater; // Reference to the room updater
     
+    [Header("UI References")]
+    public GameObject heartUI;
+    public GameObject skillUI;
+
+    [Header("Player References")]
+    public PlayerSkillController playerSkillController;
+    public PlayerHealth playerHealth;
+
     [Header("Generation Settings")]
     public bool generateOnStart = false;
     
@@ -23,9 +31,45 @@ public class DungeonGenerator : MonoBehaviour
 
     void Start()
     {
+        // Find Player references if missing
+        if (playerSkillController == null) playerSkillController = FindObjectOfType<PlayerSkillController>();
+        if (playerHealth == null) playerHealth = FindObjectOfType<PlayerHealth>();
+
+        // Hide UI and Disable System initially
+        SetDungeonActive(false);
+
         if (generateOnStart)
         {
             GenerateDungeon();
+        }
+    }
+
+    public void SetDungeonActive(bool active)
+    {
+        // Toggle UI
+        if (heartUI != null) heartUI.SetActive(active);
+        if (skillUI != null) skillUI.SetActive(active);
+
+        // Toggle Skill System
+        if (playerSkillController != null)
+        {
+            playerSkillController.isSystemActive = active;
+        }
+
+        // Toggle Room Updater UI
+        if (roomUpdater != null)
+        {
+            roomUpdater.SetUIVisibility(active);
+            if (!active)
+            {
+                roomUpdater.DeactivateAllPortals();
+            }
+        }
+
+        // Reset Health when entering the dungeon
+        if (active && playerHealth != null)
+        {
+            playerHealth.ResetHealth();
         }
     }
 
@@ -37,6 +81,9 @@ public class DungeonGenerator : MonoBehaviour
             Debug.Log("Dungeon already generated, skipping...");
             return;
         }
+        
+        // Activate Dungeon Mode (UI + Skills + Health Reset)
+        SetDungeonActive(true);
         
         Debug.Log("=== GenerateDungeon() called ===");
         
@@ -106,6 +153,12 @@ public class DungeonGenerator : MonoBehaviour
         dungeonTree = null;
         targetRoomKey = 0;
         correctSearchPath = null;
+        
+        if (minimap != null)
+        {
+            minimap.ClearMinimapPublic();
+        }
+        
         Debug.Log("Dungeon reset - will regenerate on next entry");
     }
     

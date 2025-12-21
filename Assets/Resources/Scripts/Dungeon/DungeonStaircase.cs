@@ -141,8 +141,7 @@ public class DungeonStaircase : MonoBehaviour
         IsometricCameraSetup cameraSetup = FindObjectOfType<IsometricCameraSetup>();
         if (cameraSetup != null)
         {
-            Vector3 offset = new Vector3(-cameraSetup.distance, cameraSetup.height, -cameraSetup.distance);
-            Camera.main.transform.position = finalTeleportPosition + offset;
+            cameraSetup.SnapToTarget();
         }
         
         // Generate dungeon after teleporting

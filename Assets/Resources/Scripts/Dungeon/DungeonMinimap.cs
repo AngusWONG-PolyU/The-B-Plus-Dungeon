@@ -513,7 +513,7 @@ public class DungeonMinimap : MonoBehaviour
         }
         else
         {
-            // Position so top-right of content aligns to top-right of canvas minus padding
+            // Position so the top-right of content aligns to the top-right of canvas minus padding
             // Canvas top-right is at (canvasSize.x/2, canvasSize.y/2)
             float rightEdge = (canvasSize.x / 2) - canvasPadding;
             float topEdge = (canvasSize.y / 2) - canvasPadding;
@@ -537,13 +537,13 @@ public class DungeonMinimap : MonoBehaviour
                 // Reset text size to ensure consistency
                 textRect.sizeDelta = new Vector2(300, 50);
 
-                // Calculate bottom center of the map content
+                // Calculate the bottom center of the map content
                 float centerX = (minX + maxX) / 2f;
                 float bottomY = minY;
                 float padding = 30f;
 
-                // It is a child, so coordinates are local to container
-                // We need to counter-scale the text so it stays same size
+                // It is a child, so coordinates are local to the container
+                // We need to counter-scale the text so it stays the same size
                 float invScale = scale > 0 ? 1f / scale : 1f;
                 textRect.localScale = new Vector3(invScale, invScale, 1f);
                 
@@ -576,7 +576,7 @@ public class DungeonMinimap : MonoBehaviour
         }
         else
         {
-            // Fallback if container is just a Transform (though it should be RectTransform in UI)
+            // Fallback if container is just a Transform (though it should be a RectTransform in UI)
             minimapContainer.localPosition = new Vector3(rightEdge, topEdge, 0);
         }
         

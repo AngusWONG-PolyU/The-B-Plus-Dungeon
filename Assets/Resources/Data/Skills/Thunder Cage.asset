@@ -15,7 +15,7 @@ MonoBehaviour:
   skillName: Thunder Cage
   icon: {fileID: 21300000, guid: 48b1bdfeeedd54f9db025a8868f5d8f5, type: 3}
   description: 
-  aimType: 0
+  aimType: 1
   cooldown: 1
   range: 10
   castTime: 0.2

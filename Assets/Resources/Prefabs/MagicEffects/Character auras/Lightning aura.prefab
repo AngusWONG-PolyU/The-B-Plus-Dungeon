@@ -48,7 +48,7 @@ ParticleSystem:
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
   emitterVelocityMode: 0
-  looping: 1
+  looping: 0
   prewarm: 0
   playOnAwake: 1
   useUnscaledTime: 0
@@ -4887,7 +4887,7 @@ ParticleSystem:
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
   emitterVelocityMode: 0
-  looping: 1
+  looping: 0
   prewarm: 0
   playOnAwake: 1
   useUnscaledTime: 0
@@ -9746,6 +9746,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5862613817031353211}
   - component: {fileID: 6469354921825657977}
+  - component: {fileID: 5585951800712549036}
   - component: {fileID: 5744350271466584198}
   - component: {fileID: 6620435571255386794}
   - component: {fileID: 5617682580358174585}
@@ -14505,6 +14506,24 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
+--- !u!114 &5585951800712549036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7131401307255788800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23819c4203cfa4437b6bcc3c33c753f2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 15
+  isStationary: 1
+  waitForParticles: 1
+  lifetime: 3
+  destroyOnImpact: 0
+  hitEffect: {fileID: 0}
 --- !u!199 &5744350271466584198
 ParticleSystemRenderer:
   serializedVersion: 6

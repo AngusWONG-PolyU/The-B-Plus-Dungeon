@@ -63,4 +63,13 @@ public class IsometricCameraSetup : MonoBehaviour
         
         transform.position = Vector3.Lerp(transform.position, targetPosition, followSpeed * Time.deltaTime);
     }
+
+    public void SnapToTarget()
+    {
+        if (target != null)
+        {
+            Vector3 offset = new Vector3(-distance, height, -distance);
+            transform.position = target.position + offset;
+        }
+    }
 }

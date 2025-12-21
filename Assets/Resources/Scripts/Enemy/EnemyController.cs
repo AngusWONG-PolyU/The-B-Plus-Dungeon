@@ -14,6 +14,7 @@ public class EnemyController : MonoBehaviour
     
     [Header("References")]
     public Transform player;
+    private DungeonRoomController roomController;
     
     private Animator animator;
     private bool isDead = false;
@@ -21,6 +22,7 @@ public class EnemyController : MonoBehaviour
     private int currentHealth;
     private SpriteRenderer spriteRenderer;
     private GameObject currentActiveMagic;
+    private GameObject activeLockMagic;
 
     void Start()
     {
@@ -33,6 +35,9 @@ public class EnemyController : MonoBehaviour
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj != null) player = playerObj.transform;
         }
+
+        // Find room controller in parent
+        roomController = GetComponentInParent<DungeonRoomController>();
     }
 
     void Update()
@@ -56,9 +61,9 @@ public class EnemyController : MonoBehaviour
         // Destroy Magic Test
         if (Input.GetKeyDown(KeyCode.K))
         {
-            if (currentActiveMagic != null) 
+            if (activeLockMagic != null) 
             {
-                Destroy(currentActiveMagic);
+                Destroy(activeLockMagic);
                 
                 // Unlock player when magic is destroyed
                 if (player != null)
@@ -67,7 +72,12 @@ public class EnemyController : MonoBehaviour
                     if (cm != null) cm.SetLocked(false);
                 }
                 
-                Debug.Log("Magic destroyed by key press.");
+                Debug.Log("Lock Magic destroyed by key press.");
+            }
+            
+            if (currentActiveMagic != null)
+            {
+                Destroy(currentActiveMagic);
             }
         }
 
@@ -140,31 +150,56 @@ public class EnemyController : MonoBehaviour
         // Spawn the magic
         if (skill.skillPrefab != null && player != null)
         {
-            // Destroy previous magic if it exists
-            if (currentActiveMagic != null) 
-            {
-                Destroy(currentActiveMagic);
-                CharacterMovement cm = player.GetComponent<CharacterMovement>();
-                if (cm != null) cm.SetLocked(false);
-            }
-            
-            currentActiveMagic = Instantiate(skill.skillPrefab, player.position, Quaternion.identity);
-            
-            // Initialize Projectile
-            if (currentActiveMagic != null)
-            {
-                SpellProjectile proj = currentActiveMagic.GetComponent<SpellProjectile>();
-                if (proj != null) proj.SetCaster("Enemy");
-            }
-            
-            // If this is the Lock Skill, lock the player
+            GameObject newMagic = null;
+
+            // If this is the Lock Skill
             if (skill == lockSkill)
             {
                 CharacterMovement cm = player.GetComponent<CharacterMovement>();
+
+                // Destroy previous lock magic if it exists
+                if (activeLockMagic != null) 
+                {
+                    Destroy(activeLockMagic);
+                    if (cm != null) cm.SetLocked(false);
+                }
+                
+                activeLockMagic = Instantiate(skill.skillPrefab, player.position, Quaternion.identity);
+                newMagic = activeLockMagic;
+                
+                // Lock the player
                 if (cm != null)
                 {
                     cm.StopMovement();
                     cm.SetLocked(true);
+                }
+            }
+            else
+            {
+                // For other skills (Attack), destroy previous active magic (non-lock)
+                if (currentActiveMagic != null) 
+                {
+                    Destroy(currentActiveMagic);
+                }
+                
+                currentActiveMagic = Instantiate(skill.skillPrefab, player.position, Quaternion.identity);
+                newMagic = currentActiveMagic;
+            }
+            
+            // Initialize Projectile
+            if (newMagic != null)
+            {
+                SpellProjectile proj = newMagic.GetComponent<SpellProjectile>();
+                if (proj != null) 
+                {
+                    proj.SetCaster("Enemy");
+                    
+                    // If this is the Lock Skill, prevent auto-destruction and disable damage
+                    if (skill == lockSkill)
+                    {
+                        proj.manualDestruction = true;
+                        proj.damage = 0;
+                    }
                 }
             }
         }
@@ -198,9 +233,53 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    public void ResetEnemy()
+    {
+        isDead = false;
+        currentHealth = maxHealth;
+        isAttacking = false;
+        
+        // Reset Animation
+        if (animator != null)
+        {
+            animator.Rebind();
+            animator.Update(0f);
+        }
+        
+        // Enable physics
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.enabled = true;
+        
+        // Ensure active
+        gameObject.SetActive(true);
+    }
+
     IEnumerator DieAfterDelay(float delay)
     {
         isDead = true;
+        
+        // Unlock player and destroy magic if active
+        if (activeLockMagic != null)
+        {
+            Destroy(activeLockMagic);
+            if (player != null)
+            {
+                CharacterMovement cm = player.GetComponent<CharacterMovement>();
+                if (cm != null) cm.SetLocked(false);
+            }
+        }
+
+        if (currentActiveMagic != null)
+        {
+            Destroy(currentActiveMagic);
+        }
+        
+        // Notify room controller
+        if (roomController != null)
+        {
+            roomController.EnemyDefeated(gameObject);
+        }
+
         yield return new WaitForSeconds(delay);
         
         if (animator != null) animator.SetTrigger("die");
@@ -209,7 +288,8 @@ public class EnemyController : MonoBehaviour
         Collider col = GetComponent<Collider>();
         if (col != null) col.enabled = false;
         
-        // Destroy after animation
-        Destroy(gameObject, 1f);
+        // Disable instead of Destroy to allow reuse
+        yield return new WaitForSeconds(1f);
+        gameObject.SetActive(false);
     }
 }

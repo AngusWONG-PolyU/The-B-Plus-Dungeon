@@ -5,11 +5,11 @@ using UnityEngine;
 public class DungeonPortalController : MonoBehaviour
 {
     [Header("Dungeon Integration")]
-    public DungeonRoomUpdater dungeonRoomUpdater;
+    public DungeonPortalsRoomUpdater dungeonPortalsRoomUpdater;
     public int childIndex = -1; // Set by DungeonRoomUpdater at runtime
     
     [Header("Teleport Settings")]
-    [HideInInspector] public Transform teleportDestination; // Set by DungeonRoomUpdater at runtime
+    [HideInInspector] public Transform teleportDestination; // Set by DungeonPortalsRoomUpdater at runtime
     public Vector3 teleportOffset = new Vector3(1, 0, 1);
     public string playerTag = "Player";
     
@@ -30,10 +30,10 @@ public class DungeonPortalController : MonoBehaviour
         playerTeleportEffect = player.transform.Find("TeleportEffect");
         playerTeleportEffectSystem = playerTeleportEffect.GetComponent<ParticleSystem>();
         
-        // Validate that dungeonRoomUpdater is assigned
-        if (dungeonRoomUpdater == null)
+        // Validate that dungeonPortalsRoomUpdater is assigned
+        if (dungeonPortalsRoomUpdater == null)
         {
-            Debug.LogWarning($"[DungeonPortalController] {gameObject.name}: dungeonRoomUpdater not assigned! This will be set at runtime.");
+            Debug.LogWarning($"[DungeonPortalController] {gameObject.name}: dungeonPortalsRoomUpdater not assigned! This will be set at runtime.");
         }
         
         // Hide teleport effects at start
@@ -62,9 +62,9 @@ public class DungeonPortalController : MonoBehaviour
         if (playerInRange != null && Input.GetKeyDown(KeyCode.E))
         {
             // Notify room updater that player selected this portal
-            if (dungeonRoomUpdater != null && childIndex >= 0)
+            if (dungeonPortalsRoomUpdater != null && childIndex >= 0)
             {
-                dungeonRoomUpdater.OnPlayerSelectPortal(childIndex, this);
+                dungeonPortalsRoomUpdater.OnPlayerSelectPortal(childIndex, this);
             }
         }
     }
@@ -105,7 +105,7 @@ public class DungeonPortalController : MonoBehaviour
         }
     }
     
-    // Called by DungeonRoomUpdater when this is the correct portal
+    // Called by DungeonPortalsRoomUpdater when this is the correct portal
     public void TeleportPlayer()
     {
         if (playerInRange != null && teleportDestination != null)
@@ -118,7 +118,7 @@ public class DungeonPortalController : MonoBehaviour
         }
     }
     
-    // Called by DungeonRoomUpdater when this is the wrong portal
+    // Called by DungeonPortalsRoomUpdater when this is the wrong portal
     public void TurnRed()
     {
         StartCoroutine(TurnRedAndDisable());
@@ -169,12 +169,23 @@ public class DungeonPortalController : MonoBehaviour
         Vector3 finalPosition = teleportDestination.position + teleportOffset;
         playerInRange.transform.position = finalPosition;
         
+        // Initialize the room at the destination
+        DungeonRoomController roomController = teleportDestination.GetComponentInParent<DungeonRoomController>();
+        if (roomController != null)
+        {
+            bool isBossRoom = false;
+            if (dungeonPortalsRoomUpdater != null)
+            {
+                isBossRoom = dungeonPortalsRoomUpdater.ShouldSpawnBossRoom();
+            }
+            roomController.InitializeRoom(isBossRoom);
+        }
+
         // Instantly move the camera to the new position
         IsometricCameraSetup cameraSetup = FindObjectOfType<IsometricCameraSetup>();
         if (cameraSetup != null)
         {
-            Vector3 offset = new Vector3(-cameraSetup.distance, cameraSetup.height, -cameraSetup.distance);
-            Camera.main.transform.position = finalPosition + offset;
+            cameraSetup.SnapToTarget();
         }
         
         // Wait a frame for position to sync

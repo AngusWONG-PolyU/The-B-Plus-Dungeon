@@ -15,7 +15,7 @@ MonoBehaviour:
   skillName: Meteor Swarm
   icon: {fileID: 21300000, guid: eb032f0fd4f404336b3f7c95f979a570, type: 3}
   description: 
-  aimType: 0
+  aimType: 1
   cooldown: 1
   range: 10
   castTime: 0.2

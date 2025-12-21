@@ -9,9 +9,13 @@ public class SpellProjectile : MonoBehaviour
     public bool isStationary = false; // Set to true for AOE/Positional skills (Meteor)
 
     [Header("Life Cycle")]
+    public bool manualDestruction = false;
     public bool waitForParticles = true; // If true, destroys after particle system finishes
     public float lifetime = 3f; // Fallback lifetime
     public bool destroyOnImpact = false;
+
+    [Header("Combat")]
+    public int damage = 1;
 
     [Header("Visuals")]
     public GameObject hitEffect;
@@ -25,6 +29,8 @@ public class SpellProjectile : MonoBehaviour
 
     void Start()
     {
+        if (manualDestruction) return;
+
         ParticleSystem ps = GetComponent<ParticleSystem>();
         
         if (waitForParticles && ps != null)
@@ -54,6 +60,8 @@ public class SpellProjectile : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"Projectile hit: {other.name} (Tag: {other.tag})");
+
         // 1. Ignore the Caster
         if (casterTag != null && other.CompareTag(casterTag)) return;
         
@@ -65,12 +73,20 @@ public class SpellProjectile : MonoBehaviour
         if (casterTag == "Player" && other.CompareTag("Enemy"))
         {
             EnemyController enemy = other.GetComponent<EnemyController>();
-            if (enemy != null) enemy.TakeDamage(1); // Basic damage
+            if (enemy != null) enemy.TakeDamage(damage); // Basic damage
         }
         // If Enemy fired it -> Hit Player
         else if (casterTag == "Enemy" && other.CompareTag("Player"))
         {
-            Debug.Log("Player hit by Enemy Magic!");
+            PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
+            {
+                playerHealth.TakeDamage(damage);
+            }
+            else
+            {
+                Debug.Log("Player hit by Enemy Magic, but no PlayerHealth script found!");
+            }
         }
 
         if (destroyOnImpact)

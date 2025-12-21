@@ -15,6 +15,9 @@ public class PlayerSkillController : MonoBehaviour
     public Transform directionalIndicator; // Shows direction
     public Transform positionalIndicator; // Shows position
 
+    [Header("System Settings")]
+    public bool isSystemActive = true;
+
     // Runtime State
     private int currentSkillIndex = -1;
     private bool isAiming = false;
@@ -60,6 +63,13 @@ public class PlayerSkillController : MonoBehaviour
         }
     }
 
+    void OnDisable()
+    {
+        // Ensure indicators are hidden when the script is disabled
+        HideIndicators();
+        isAiming = false;
+    }
+
     void HandleCooldowns()
     {
         for (int i = 0; i < currentCooldowns.Length; i++)
@@ -73,6 +83,12 @@ public class PlayerSkillController : MonoBehaviour
 
     void HandleInput()
     {
+        if (!isSystemActive)
+        {
+            if (isAiming) CancelAiming();
+            return;
+        }
+
         // 1. Skill Selection (Press 1-4)
         if (Input.GetKeyDown(KeyCode.Alpha1)) TryStartAiming(0);
         if (Input.GetKeyDown(KeyCode.Alpha2)) TryStartAiming(1);
@@ -154,13 +170,35 @@ public class PlayerSkillController : MonoBehaviour
     void UpdateAimingVisuals()
     {
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
         
         // Use LayerMask to only hit Ground
         // If groundLayer is not set, default to Everything
         int layerMask = groundLayer.value != 0 ? groundLayer.value : Physics.DefaultRaycastLayers;
 
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, layerMask))
+        // Use RaycastAll to penetrate the player if they are in the way
+        RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, layerMask);
+        
+        RaycastHit hit = new RaycastHit();
+        bool foundHit = false;
+        float closestDist = Mathf.Infinity;
+
+        foreach (var h in hits)
+        {
+            // Ignore the player and any child colliders
+            if (h.collider.transform.IsChildOf(transform)) continue;
+            
+            // Ignore triggers
+            if (h.collider.isTrigger) continue;
+
+            if (h.distance < closestDist)
+            {
+                closestDist = h.distance;
+                hit = h;
+                foundHit = true;
+            }
+        }
+
+        if (foundHit)
         {
             Vector3 mousePos = hit.point;
             Vector3 playerPos = transform.position;
@@ -178,7 +216,13 @@ public class PlayerSkillController : MonoBehaviour
                     directionalIndicator.position = playerPos + Vector3.up * 0.1f;
 
                     // 2. Rotation: Face the mouse
-                    directionalIndicator.LookAt(flatMousePos);
+                    Vector3 lookTarget = flatMousePos;
+                    lookTarget.y = directionalIndicator.position.y; // Ensure horizontal rotation
+                    
+                    if (Vector3.Distance(lookTarget, directionalIndicator.position) > 0.01f)
+                    {
+                        directionalIndicator.LookAt(lookTarget);
+                    }
 
                     // 3. Scale/Size: Scale the whole indicator based on the 9-Sliced child's height
                     Transform slicedChild = directionalIndicator.Find("9-Sliced");

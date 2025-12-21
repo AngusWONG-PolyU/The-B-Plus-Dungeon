@@ -5,42 +5,64 @@ using UnityEngine;
 // Handles dungeon game logic: hearts, win/lose conditions, room progression
 public class DungeonManager : MonoBehaviour
 {
-    [Header("Player Stats")]
-    public int playerHearts = 3;
-    
     [Header("References")]
     public DungeonGenerator dungeonGenerator;
-    
-    private int targetKey;
+    public PlayerHealth playerHealth;
+
+    [Header("Spawn Points")]
+    public Transform portalsRoomSpawn; // Spawn point in the Portals Room
+    public Transform leafRoomSpawn; // Spawn point in the Leaf Room
+
+    // Reset dungeon state
+    public void ResetDungeon()
+    {
+        if (playerHealth != null)
+        {
+            playerHealth.ResetHealth();
+        }
+        
+        Debug.Log("Dungeon state reset");
+    }
     
     void Start()
     {
-        // Get target key from generator after dungeon is generated
+        // Subscribe to the death event
+        if (playerHealth != null)
+        {
+            playerHealth.OnPlayerDeath.AddListener(OnPlayerDied);
+        }
+    }
+    
+    public void OnPlayerDied()
+    {
+        Debug.Log("Player died - Exiting Dungeon Mode");
         if (dungeonGenerator != null)
         {
-            targetKey = dungeonGenerator.GetTargetKey();
+            dungeonGenerator.SetDungeonActive(false);
+            dungeonGenerator.ResetDungeon();
         }
     }
     
-    // Called when player chooses wrong portal
+    // Called when the player chooses the wrong portal
     public void OnWrongPortal()
     {
-        playerHearts--;
-        Debug.Log($"Lost 1 heart. Remaining hearts: {playerHearts}");
-        
-        // TODO: Update UI hearts display here
-        // heartUI.RemoveHeart();
-        
-        if (playerHearts <= 0)
+        if (playerHealth != null)
         {
-            OnGameOver();
+            playerHealth.TakeDamage(1);
+        }
+        else
+        {
+            Debug.LogWarning("PlayerHealth not assigned in DungeonManager!");
         }
     }
     
-    // Called when player reaches a leaf node
+    // Called when the player reaches a leaf node
     public void OnReachedLeaf(BPlusTreeNode<int, int> leafNode)
     {
-        bool foundTarget = leafNode.Keys.Contains(targetKey);
+        // Fetch the current target key dynamically
+        int currentTargetKey = (dungeonGenerator != null) ? dungeonGenerator.GetTargetKey() : -1;
+        
+        bool foundTarget = leafNode.Keys.Contains(currentTargetKey);
         if (foundTarget)
         {
             Debug.Log("SUCCESS! Target room found!");
@@ -48,11 +70,11 @@ public class DungeonManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("Reached leaf but no target - this shouldn't happen!");
+            Debug.LogWarning($"Reached leaf but no target (Target: {currentTargetKey}) - this shouldn't happen!");
         }
     }
     
-    // Called when target is found
+    // Called when the target is found
     private void OnTargetFound()
     {
         Debug.Log("Dungeon Complete! You found the target!");
@@ -60,7 +82,7 @@ public class DungeonManager : MonoBehaviour
         // TODO: Show victory UI, rewards, etc.
     }
     
-    // Called when player runs out of hearts
+    // Called when the player runs out of hearts
     private void OnGameOver()
     {
         Debug.Log("Game Over! No hearts remaining.");

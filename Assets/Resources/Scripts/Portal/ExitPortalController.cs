@@ -145,12 +145,40 @@ public class ExitPortalController : MonoBehaviour
         Vector3 finalPosition = teleportDestination.position + teleportOffset;
         playerInRange.transform.position = finalPosition;
         
+        // Disable Dungeon Mode (UI + Skills)
+        if (dungeonGenerator != null)
+        {
+            dungeonGenerator.SetDungeonActive(false);
+            
+            // Reset Dungeon State
+            DungeonManager dm = FindObjectOfType<DungeonManager>();
+            if (dm != null)
+            {
+                dm.ResetDungeon();
+            }
+        }
+        else
+        {
+            // Fallback: Try to find it if the reference is missing
+            DungeonGenerator gen = FindObjectOfType<DungeonGenerator>();
+            if (gen != null) 
+            {
+                gen.SetDungeonActive(false);
+                
+                // Reset Dungeon State
+                DungeonManager dm = FindObjectOfType<DungeonManager>();
+                if (dm != null)
+                {
+                    dm.ResetDungeon();
+                }
+            }
+        }
+
         // Instantly move the camera to the new position
         IsometricCameraSetup cameraSetup = FindObjectOfType<IsometricCameraSetup>();
         if (cameraSetup != null)
         {
-            Vector3 offset = new Vector3(-cameraSetup.distance, cameraSetup.height, -cameraSetup.distance);
-            Camera.main.transform.position = finalPosition + offset;
+            cameraSetup.SnapToTarget();
         }
         
         // Wait a frame for position to sync
