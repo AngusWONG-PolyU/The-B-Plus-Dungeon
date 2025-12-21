@@ -23,6 +23,7 @@ public class EnemyController : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private GameObject currentActiveMagic;
     private GameObject activeLockMagic;
+    private PlayerHealth playerHealth;
 
     void Start()
     {
@@ -34,6 +35,15 @@ public class EnemyController : MonoBehaviour
         {
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj != null) player = playerObj.transform;
+        }
+
+        if (player != null)
+        {
+            playerHealth = player.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
+            {
+                playerHealth.OnPlayerDeath.AddListener(OnPlayerDied);
+            }
         }
 
         // Find room controller in parent
@@ -291,5 +301,21 @@ public class EnemyController : MonoBehaviour
         // Disable instead of Destroy to allow reuse
         yield return new WaitForSeconds(1f);
         gameObject.SetActive(false);
+    }
+
+    void OnPlayerDied()
+    {
+        if (activeLockMagic != null)
+        {
+            Destroy(activeLockMagic);
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (playerHealth != null)
+        {
+            playerHealth.OnPlayerDeath.RemoveListener(OnPlayerDied);
+        }
     }
 }
