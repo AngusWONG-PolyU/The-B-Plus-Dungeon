@@ -85,9 +85,19 @@ public class PlayerHealth : MonoBehaviour
         // Unlock movement
         if (movement != null) movement.SetLocked(false);
         
-        // Re-enable Skills
+        // Re-enable Skills (Only if Dungeon is Active)
         PlayerSkillController skillController = GetComponent<PlayerSkillController>();
-        if (skillController != null) skillController.enabled = true;
+        if (skillController != null)
+        {
+            skillController.enabled = true;
+            
+            // Check Dungeon State
+            DungeonManager dm = FindObjectOfType<DungeonManager>();
+            if (dm != null)
+            {
+                skillController.isSystemActive = dm.isDungeonActive;
+            }
+        }
         
         // Reset Animation
         if (animator != null) animator.Play("Idle"); 

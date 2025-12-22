@@ -14,6 +14,7 @@ public class CharacterMovement : MonoBehaviour
     // Animation components
     private Animator animator;
     private Transform character;
+    private PlayerSkillController skillController;
     
     private Vector3 targetPosition;
     
@@ -44,6 +45,9 @@ public class CharacterMovement : MonoBehaviour
         // Get the NavMeshAgent
         navAgent = GetComponent<NavMeshAgent>();
         
+        // Get PlayerSkillController
+        skillController = GetComponent<PlayerSkillController>();
+
         // Make character face camera initially and store this as base rotation
         FaceCamera();
         baseCameraRotation = character.rotation;
@@ -189,6 +193,22 @@ public class CharacterMovement : MonoBehaviour
     public void SetLocked(bool locked)
     {
         isLocked = locked;
+        
+        // Lock/Unlock Skills
+        if (skillController != null)
+        {
+            if (locked)
+            {
+                skillController.isSystemActive = false;
+            }
+            else
+            {
+                // Only enable skills if DungeonManager says dungeon is active
+                DungeonManager dm = FindObjectOfType<DungeonManager>();
+                skillController.isSystemActive = (dm != null && dm.isDungeonActive);
+            }
+        }
+
         if (isLocked)
         {
             // Stop immediately when locked

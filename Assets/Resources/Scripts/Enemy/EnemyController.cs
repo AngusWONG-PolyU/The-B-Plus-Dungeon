@@ -11,6 +11,17 @@ public class EnemyController : MonoBehaviour
     [Header("Skills")]
     public SkillData attackSkill;
     public SkillData lockSkill;
+
+    [Header("Combat Settings")]
+    public float attackRange = 5f;
+    public float attackInterval = 3f;
+    public float chantDuration = 5f;
+
+    private bool firstEncounter = true;
+    private float attackTimer = 0f;
+    private bool isLocked = false;
+    private bool isChanting = false;
+    private Coroutine combatCoroutine;
     
     [Header("References")]
     public Transform player;
@@ -58,11 +69,13 @@ public class EnemyController : MonoBehaviour
 
     void Update()
     {
+        /*
         // Test Input
         if (Input.GetKeyDown(KeyCode.T))
         {
             TakeDamage(1);
         }
+        */
         
         // Manual Cast Testing
         if (Input.GetKeyDown(KeyCode.L))
@@ -107,13 +120,172 @@ public class EnemyController : MonoBehaviour
             FacePlayer();
         }
 
-        // Auto-attack logic disabled for manual testing
-        /*
+        // Combat Logic
         if (distance <= attackRange)
         {
-            Attack();
+            if (firstEncounter)
+            {
+                firstEncounter = false;
+                StartLockSequence();
+            }
+            else if (!isAttacking && !isLocked && !isChanting)
+            {
+                attackTimer += Time.deltaTime;
+                if (attackTimer >= attackInterval)
+                {
+                    attackTimer = 0f;
+                    // Randomly choose between Lock Sequence (which leads to attack) or Direct Attack
+                    if (Random.value > 0.5f)
+                    {
+                        StartLockSequence();
+                    }
+                    else
+                    {
+                        StartDirectAttack();
+                    }
+                }
+            }
         }
-        */
+
+        // Handle Click when Locked to start Chant
+        if (isLocked && Input.GetMouseButtonDown(0))
+        {
+            StartChantSequence();
+        }
+    }
+
+    void StartLockSequence()
+    {
+        if (combatCoroutine != null) StopCoroutine(combatCoroutine);
+        combatCoroutine = StartCoroutine(LockRoutine());
+    }
+
+    void StartChantSequence()
+    {
+        if (combatCoroutine != null) StopCoroutine(combatCoroutine);
+        combatCoroutine = StartCoroutine(ChantRoutine());
+    }
+
+    void StartDirectAttack()
+    {
+        if (combatCoroutine != null) StopCoroutine(combatCoroutine);
+        combatCoroutine = StartCoroutine(DirectAttackRoutine());
+    }
+
+    IEnumerator LockRoutine()
+    {
+        isAttacking = true;
+        
+        if (animator != null) animator.SetBool("isCasting", true);
+        
+        // Wait for cast time
+        yield return new WaitForSeconds(lockSkill.castTime);
+        
+        // Spawn Lock Magic
+        if (lockSkill.skillPrefab != null && player != null)
+        {
+            // Destroy previous lock magic if it exists
+            if (activeLockMagic != null) Destroy(activeLockMagic);
+            
+            activeLockMagic = Instantiate(lockSkill.skillPrefab, player.position, Quaternion.identity);
+            
+            CharacterMovement cm = player.GetComponent<CharacterMovement>();
+            if (cm != null)
+            {
+                cm.StopMovement();
+                cm.SetLocked(true);
+            }
+            
+            // Configure projectile
+            SpellProjectile proj = activeLockMagic.GetComponent<SpellProjectile>();
+            if (proj != null)
+            {
+                proj.SetCaster("Enemy");
+                proj.manualDestruction = true;
+                proj.damage = 0;
+            }
+        }
+        
+        if (animator != null) animator.SetBool("isCasting", false);
+        
+        isAttacking = false;
+        isLocked = true; // Now waiting for player input
+    }
+
+    IEnumerator ChantRoutine()
+    {
+        isLocked = false; // Transitioning to chant
+        isChanting = true;
+        isAttacking = true;
+        
+        if (animator != null) animator.SetBool("isCasting", true);
+        
+        // Chant duration
+        yield return new WaitForSeconds(chantDuration);
+        
+        // If we reached here, the attack was not interrupted
+        if (attackSkill.skillPrefab != null && player != null)
+        {
+            if (currentActiveMagic != null) Destroy(currentActiveMagic);
+            
+            currentActiveMagic = Instantiate(attackSkill.skillPrefab, player.position, Quaternion.identity);
+            
+            SpellProjectile proj = currentActiveMagic.GetComponent<SpellProjectile>();
+            if (proj != null)
+            {
+                proj.SetCaster("Enemy");
+            }
+        }
+        
+        // Cleanup
+        UnlockPlayer();
+        
+        if (animator != null) animator.SetBool("isCasting", false);
+        
+        isChanting = false;
+        isAttacking = false;
+        
+        // Small cooldown
+        yield return new WaitForSeconds(1f);
+    }
+
+    IEnumerator DirectAttackRoutine()
+    {
+        isAttacking = true;
+        
+        if (animator != null) animator.SetBool("isCasting", true);
+        
+        yield return new WaitForSeconds(attackSkill.castTime);
+        
+        if (attackSkill.skillPrefab != null && player != null)
+        {
+            if (currentActiveMagic != null) Destroy(currentActiveMagic);
+            
+            currentActiveMagic = Instantiate(attackSkill.skillPrefab, player.position, Quaternion.identity);
+            
+            SpellProjectile proj = currentActiveMagic.GetComponent<SpellProjectile>();
+            if (proj != null)
+            {
+                proj.SetCaster("Enemy");
+            }
+        }
+        
+        if (animator != null) animator.SetBool("isCasting", false);
+        
+        isAttacking = false;
+        
+        yield return new WaitForSeconds(1f);
+    }
+
+    void UnlockPlayer()
+    {
+        if (activeLockMagic != null) Destroy(activeLockMagic);
+        
+        if (player != null)
+        {
+            CharacterMovement cm = player.GetComponent<CharacterMovement>();
+            if (cm != null) cm.SetLocked(false);
+        }
     }
 
     void FacePlayer()
@@ -231,9 +403,27 @@ public class EnemyController : MonoBehaviour
         isAttacking = false;
     }
 
+    void InterruptAttack()
+    {
+        if (combatCoroutine != null) StopCoroutine(combatCoroutine);
+        
+        if (animator != null) animator.SetBool("isCasting", false);
+        
+        isChanting = false;
+        isAttacking = false;
+        isLocked = false;
+        
+        Debug.Log("Enemy Attack Interrupted!");
+    }
+
     public void TakeDamage(int damage)
     {
         if (isDead) return;
+        
+        if (isChanting)
+        {
+            InterruptAttack();
+        }
         
         currentHealth -= damage;
         
@@ -265,6 +455,11 @@ public class EnemyController : MonoBehaviour
         }
         
         isAttacking = false;
+        firstEncounter = true;
+        attackTimer = 0f;
+        isLocked = false;
+        isChanting = false;
+        if (combatCoroutine != null) StopCoroutine(combatCoroutine);
         
         // Reset Animation
         if (animator != null)

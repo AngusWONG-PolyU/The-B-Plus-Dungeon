@@ -46,6 +46,10 @@ public class DungeonGenerator : MonoBehaviour
 
     public void SetDungeonActive(bool active)
     {
+        // Update Manager State
+        DungeonManager manager = FindObjectOfType<DungeonManager>();
+        if (manager != null) manager.isDungeonActive = active;
+
         // Toggle UI
         if (heartUI != null) heartUI.SetActive(active);
         if (skillUI != null) skillUI.SetActive(active);

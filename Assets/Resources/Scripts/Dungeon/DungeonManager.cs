@@ -13,6 +13,8 @@ public class DungeonManager : MonoBehaviour
     public Transform portalsRoomSpawn; // Spawn point in the Portals Room
     public Transform leafRoomSpawn; // Spawn point in the Leaf Room
 
+    public bool isDungeonActive = false;
+
     // Reset dungeon state
     public void ResetDungeon()
     {

@@ -10,10 +10,12 @@ public class EnemyHealthBar : MonoBehaviour
     [SerializeField] private Canvas canvas;
 
     private Camera mainCamera;
+    private Vector3 initialScale;
 
     private void Start()
     {
         mainCamera = Camera.main;
+        initialScale = transform.localScale;
         
         if (canvas != null && canvas.renderMode != RenderMode.WorldSpace)
         {
@@ -26,6 +28,13 @@ public class EnemyHealthBar : MonoBehaviour
         if (canvas != null && mainCamera != null)
         {
             transform.rotation = Quaternion.LookRotation(transform.position - mainCamera.transform.position);
+
+            // Fix scale flipping when parent flips
+            if (transform.parent != null)
+            {
+                float xSign = Mathf.Sign(transform.parent.localScale.x);
+                transform.localScale = new Vector3(xSign * initialScale.x, initialScale.y, initialScale.z);
+            }
         }
     }
 
