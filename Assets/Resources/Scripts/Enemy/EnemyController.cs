@@ -14,6 +14,7 @@ public class EnemyController : MonoBehaviour
     
     [Header("References")]
     public Transform player;
+    public EnemyHealthBar healthBar;
     private DungeonRoomController roomController;
     
     private Animator animator;
@@ -30,6 +31,11 @@ public class EnemyController : MonoBehaviour
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         currentHealth = maxHealth;
+        
+        if (healthBar != null)
+        {
+            healthBar.UpdateHealthBar(currentHealth, maxHealth);
+        }
         
         if (player == null)
         {
@@ -231,6 +237,11 @@ public class EnemyController : MonoBehaviour
         
         currentHealth -= damage;
         
+        if (healthBar != null)
+        {
+            healthBar.UpdateHealthBar(currentHealth, maxHealth);
+        }
+        
         if (currentHealth <= 0)
         {
             // Play hit animation first, then die
@@ -247,6 +258,12 @@ public class EnemyController : MonoBehaviour
     {
         isDead = false;
         currentHealth = maxHealth;
+        
+        if (healthBar != null)
+        {
+            healthBar.UpdateHealthBar(currentHealth, maxHealth);
+        }
+        
         isAttacking = false;
         
         // Reset Animation
