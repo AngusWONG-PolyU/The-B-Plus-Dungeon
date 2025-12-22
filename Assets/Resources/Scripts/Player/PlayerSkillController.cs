@@ -155,7 +155,7 @@ public class PlayerSkillController : MonoBehaviour
         {
             if (directionalIndicator) directionalIndicator.gameObject.SetActive(true);
         }
-        else if (skill.aimType == SkillAimType.Positional)
+        else if (skill.aimType == SkillAimType.Positional || skill.aimType == SkillAimType.Self)
         {
             if (positionalIndicator) positionalIndicator.gameObject.SetActive(true);
         }
@@ -297,6 +297,38 @@ public class PlayerSkillController : MonoBehaviour
                     positionalIndicator.localScale = new Vector3(maxDiameter, maxDiameter, 1f);
                 }
             }
+            else if (currentSkill.aimType == SkillAimType.Self)
+            {
+                if (positionalIndicator)
+                {
+                    // 1. Position: Always at player's feet
+                    positionalIndicator.position = transform.position + Vector3.up * 0.1f;
+
+                    // 2. Scale: Same logic as Positional
+                    float maxDiameter = 1.0f;
+                    if (currentSkill.skillPrefab != null)
+                    {
+                        ParticleSystem[] particles = currentSkill.skillPrefab.GetComponentsInChildren<ParticleSystem>();
+                        float largestSize = 0f;
+                        foreach (ParticleSystem ps in particles)
+                        {
+                            float currentSize = ps.main.startSize.constantMax;
+                            var shape = ps.shape;
+                            if (shape.enabled)
+                            {
+                                currentSize = shape.radius * 2f;
+                                if (shape.shapeType == ParticleSystemShapeType.Box || shape.shapeType == ParticleSystemShapeType.Rectangle)
+                                {
+                                    currentSize = Mathf.Max(shape.scale.x, shape.scale.y);
+                                }
+                            }
+                            if (currentSize > largestSize) largestSize = currentSize;
+                        }
+                        if (largestSize > 0) maxDiameter = largestSize;
+                    }
+                    positionalIndicator.localScale = new Vector3(maxDiameter, maxDiameter, 1f);
+                }
+            }
         }
     }
 
@@ -399,12 +431,25 @@ public class PlayerSkillController : MonoBehaviour
 
                 magicObj = Instantiate(skill.skillPrefab, finalPos, Quaternion.identity);
             }
+            else if (skill.aimType == SkillAimType.Self)
+            {
+                // Spawn at player position
+                magicObj = Instantiate(skill.skillPrefab, transform.position, Quaternion.identity);
+            }
 
             // Initialize Projectile
             if (magicObj != null)
             {
                 SpellProjectile proj = magicObj.GetComponent<SpellProjectile>();
-                if (proj != null) proj.SetCaster("Player");
+                if (proj != null) 
+                {
+                    proj.SetCaster("Player");
+                    // Force stationary for Self spells so they can hit the caster immediately
+                    if (skill.aimType == SkillAimType.Self)
+                    {
+                        proj.isStationary = true;
+                    }
+                }
             }
         }
 

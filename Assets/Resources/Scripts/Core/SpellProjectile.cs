@@ -16,6 +16,8 @@ public class SpellProjectile : MonoBehaviour
 
     [Header("Combat")]
     public int damage = 1;
+    public bool isHealing = false;
+    public int healAmount = 1;
 
     [Header("Visuals")]
     public GameObject hitEffect;
@@ -63,29 +65,45 @@ public class SpellProjectile : MonoBehaviour
         Debug.Log($"Projectile hit: {other.name} (Tag: {other.tag})");
 
         // 1. Ignore the Caster
-        if (casterTag != null && other.CompareTag(casterTag)) return;
+        // Allow self-hit ONLY if it is a stationary healing spell
+        if (casterTag != null && other.CompareTag(casterTag))
+        {
+            if (!(isHealing && isStationary)) return;
+        }
         
         // 2. Ignore Trigger colliders
         if (other.isTrigger) return;
 
-        // 3. Handle Damage
-        // If Player fired it -> Hit Enemy
-        if (casterTag == "Player" && other.CompareTag("Enemy"))
-        {
-            EnemyController enemy = other.GetComponent<EnemyController>();
-            if (enemy != null) enemy.TakeDamage(damage); // Basic damage
-        }
-        // If Enemy fired it -> Hit Player
-        else if (casterTag == "Enemy" && other.CompareTag("Player"))
+        // 3. Handle Healing
+        if (isHealing)
         {
             PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
             if (playerHealth != null)
             {
-                playerHealth.TakeDamage(damage);
+                playerHealth.Heal(healAmount);
             }
-            else
+        }
+        else
+        {
+            // 4. Handle Damage
+            // If Player fired it -> Hit Enemy
+            if (casterTag == "Player" && other.CompareTag("Enemy"))
             {
-                Debug.Log("Player hit by Enemy Magic, but no PlayerHealth script found!");
+                EnemyController enemy = other.GetComponent<EnemyController>();
+                if (enemy != null) enemy.TakeDamage(damage); // Basic damage
+            }
+            // If Enemy fired it -> Hit Player
+            else if (casterTag == "Enemy" && other.CompareTag("Player"))
+            {
+                PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(damage);
+                }
+                else
+                {
+                    Debug.Log("Player hit by Enemy Magic, but no PlayerHealth script found!");
+                }
             }
         }
 
