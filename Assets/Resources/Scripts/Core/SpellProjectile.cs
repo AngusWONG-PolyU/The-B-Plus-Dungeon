@@ -23,6 +23,7 @@ public class SpellProjectile : MonoBehaviour
     public GameObject hitEffect;
 
     private string casterTag;
+    private HashSet<GameObject> hitTargets = new HashSet<GameObject>();
 
     public void SetCaster(string tag)
     {
@@ -73,6 +74,10 @@ public class SpellProjectile : MonoBehaviour
         
         // 2. Ignore Trigger colliders
         if (other.isTrigger) return;
+
+        // Prevent multiple hits on the same target
+        if (hitTargets.Contains(other.gameObject)) return;
+        hitTargets.Add(other.gameObject);
 
         // 3. Handle Healing
         if (isHealing)

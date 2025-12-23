@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bc7d9aa55f2a4182980cb8ea63aa851, type: 3}
   m_Name: Healing
   m_EditorClassIdentifier: 
-  skillName: 
-  icon: {fileID: 0}
+  skillName: Healing
+  icon: {fileID: 21300000, guid: b13d39afb4a5744e287f16c0feafd87d, type: 3}
   description: 
-  aimType: 0
+  aimType: 2
   cooldown: 1
   range: 10
   castTime: 0.2
-  skillPrefab: {fileID: 0}
+  skillPrefab: {fileID: 7986504087968017091, guid: 12a56ee4630040c4eb17ae9707ed4cef, type: 3}
   rotationOffset: {x: 0, y: 0, z: 0}

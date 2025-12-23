@@ -20211,6 +20211,7 @@ MonoBehaviour:
   playerHealth: {fileID: 1028783019}
   portalsRoomSpawn: {fileID: 6829789}
   leafRoomSpawn: {fileID: 1395097189}
+  isDungeonActive: 0
 --- !u!4 &422611729
 Transform:
   m_ObjectHideFlags: 0
@@ -28733,7 +28734,7 @@ Transform:
   m_GameObject: {fileID: 638107041}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.87454605, y: -4, z: 2.9534683}
+  m_LocalPosition: {x: 2, y: -4, z: 4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -45350,8 +45351,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   destinationName: Lobby
-  teleportDestination: {fileID: 968186710}
-  teleportOffset: {x: 0, y: 0, z: -2}
+  teleportDestination: {fileID: 29289876}
+  teleportOffset: {x: -2, y: 0, z: 0}
   playerTag: Player
   player: {fileID: 1028783012}
   promptText: {fileID: 37760695}
@@ -47499,8 +47500,8 @@ MonoBehaviour:
   equippedSkills:
   - {fileID: 11400000, guid: 2e0ea8b67a0ec4624ad26fc4b0671cde, type: 2}
   - {fileID: 11400000, guid: 3509a8a390748492dbea7aa3454b2aab, type: 2}
+  - {fileID: 11400000, guid: fc3fb48e2610e4401b8a4628975ffcee, type: 2}
   - {fileID: 11400000, guid: c0a1acf77ccd44b3491dfa8a7b9444d0, type: 2}
-  - {fileID: 11400000, guid: 1e130cf295265489b9f5533003e8a396, type: 2}
   movementScript: {fileID: 0}
   groundLayer:
     serializedVersion: 2
@@ -83390,6 +83391,7 @@ GameObject:
   - component: {fileID: 1775200735}
   - component: {fileID: 1775200736}
   - component: {fileID: 1775200737}
+  - component: {fileID: 1775200738}
   m_Layer: 3
   m_Name: EVilWizard
   m_TagString: Enemy
@@ -83538,8 +83540,27 @@ MonoBehaviour:
   detectionRange: 10
   attackSkill: {fileID: 11400000, guid: c0a1acf77ccd44b3491dfa8a7b9444d0, type: 2}
   lockSkill: {fileID: 11400000, guid: 1e130cf295265489b9f5533003e8a396, type: 2}
+  attackRange: 15
+  attackInterval: 3
+  chantDuration: 3
   player: {fileID: 1028783013}
   healthBar: {fileID: 454540590}
+--- !u!208 &1775200738
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1775200731}
+  m_Enabled: 0
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.25, y: 0.25, z: 0.1}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &1775732327
 GameObject:
   m_ObjectHideFlags: 0
