@@ -7,6 +7,8 @@ public class DungeonStaircase : MonoBehaviour
 {
     [Header("Staircase Settings")]
     public string dungeonName = "Tutorial Dungeon"; // Name of the dungeon
+    public bool isDungeonEntrance = false;
+    public DungeonGenerator.DifficultyMode difficultyMode = DungeonGenerator.DifficultyMode.Tutorial; // Difficulty for this entrance
     public Transform teleportDestination; // Where to teleport player
     public Vector3 teleportOffset = new Vector3(1, 1, 1); // Offset from destination
     public string playerTag = "Player";
@@ -147,6 +149,13 @@ public class DungeonStaircase : MonoBehaviour
         // Generate dungeon after teleporting
         if (dungeonGenerator != null)
         {
+            if (isDungeonEntrance)
+            {
+                Debug.Log($"[DungeonStaircase] Entering dungeon via entrance. Setting difficulty to {difficultyMode} and resetting dungeon.");
+                dungeonGenerator.ResetDungeon();
+                dungeonGenerator.difficultyMode = difficultyMode;
+            }
+
             dungeonGenerator.GenerateDungeon();
             
             // Ensure UI is visible when entering via staircase

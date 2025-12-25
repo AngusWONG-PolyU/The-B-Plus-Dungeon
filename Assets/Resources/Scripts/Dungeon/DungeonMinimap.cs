@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public class DungeonMinimap : MonoBehaviour
 {
+    // TODO: Update the full map display to address the issue that occurred when too many nodes were displayed
     [Header("References")]
     [System.NonSerialized]
     public BPlusTree<int, int> dungeonTree; // Reference to the B+ Tree structure for dungeon navigation

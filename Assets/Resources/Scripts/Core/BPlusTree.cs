@@ -94,6 +94,31 @@ public class BPlusTree<TKey, TValue> where TKey : IComparable<TKey>
         Count = 0;
     }
 
+    // Calculates the height of the tree
+    public int GetHeight()
+    {
+        if (Root == null) return 0;
+
+        int height = 1;
+        var currentNode = Root;
+
+        // Traverse down to the first leaf to count height
+        while (!currentNode.IsLeaf)
+        {
+            if (currentNode.Children != null && currentNode.Children.Count > 0)
+            {
+                currentNode = currentNode.Children[0];
+                height++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return height;
+    }
+
     #region Insertion
 
     // Inserts a key-value pair into the B+ tree
@@ -809,7 +834,7 @@ public class BPlusTree<TKey, TValue> where TKey : IComparable<TKey>
 
         if (node.IsLeaf)
         {
-            // Check all leaves at same level
+            // Check all leaves at the same level
             if (leafLevel == -1)
             {
                 leafLevel = level;

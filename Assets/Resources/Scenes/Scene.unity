@@ -5136,6 +5136,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Tutorial Dungeon
+  isDungeonEntrance: 1
+  difficultyMode: 0
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player
@@ -22280,6 +22282,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Dungeon Portals Room
+  isDungeonEntrance: 0
+  difficultyMode: 0
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player
@@ -22761,6 +22765,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Dungeon Portals Room
+  isDungeonEntrance: 0
+  difficultyMode: 0
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player
@@ -44771,6 +44777,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Tutorial Dungeon
+  isDungeonEntrance: 1
+  difficultyMode: 0
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player
@@ -55851,6 +55859,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Easy Dungeon
+  isDungeonEntrance: 1
+  difficultyMode: 1
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player
@@ -61672,6 +61682,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Tutorial Dungeon
+  isDungeonEntrance: 1
+  difficultyMode: 0
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player
@@ -79171,6 +79183,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Dungeon Portals Room
+  isDungeonEntrance: 0
+  difficultyMode: 0
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player
@@ -79802,6 +79816,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Dungeon Portals Room
+  isDungeonEntrance: 0
+  difficultyMode: 0
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player
@@ -93480,6 +93496,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 898287e031fe44149904ebda35771609, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  difficultyMode: 0
   numberOfKeys: 30
   treeOrder: 4
   minimap: {fileID: 324931989}
@@ -95410,6 +95427,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Tutorial Dungeon
+  isDungeonEntrance: 1
+  difficultyMode: 0
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player
@@ -96088,6 +96107,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Hard Dungeon
+  isDungeonEntrance: 1
+  difficultyMode: 3
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player
@@ -98968,6 +98989,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dungeonName: Standard Dungeon
+  isDungeonEntrance: 1
+  difficultyMode: 2
   teleportDestination: {fileID: 6829789}
   teleportOffset: {x: 1, y: 1, z: 1}
   playerTag: Player

@@ -4,7 +4,16 @@ using UnityEngine;
 
 public class DungeonGenerator : MonoBehaviour
 {
+    public enum DifficultyMode
+    {
+        Tutorial,
+        Easy,
+        Standard,
+        Hard
+    }
+
     [Header("Dungeon Settings")]
+    public DifficultyMode difficultyMode = DifficultyMode.Tutorial;
     public int numberOfKeys = 15; // Total number of keys to insert into the tree
     public int treeOrder = 4; // B+ Tree order
     
@@ -28,6 +37,10 @@ public class DungeonGenerator : MonoBehaviour
     private int targetRoomKey;
     private int[] correctSearchPath;
     private bool isGenerated = false; // Track if dungeon has been generated
+
+    // Level constraints for generation
+    private int minLevel;
+    private int maxLevel;
 
     void Start()
     {
@@ -90,30 +103,62 @@ public class DungeonGenerator : MonoBehaviour
         SetDungeonActive(true);
         
         Debug.Log("=== GenerateDungeon() called ===");
+
+        CalculateNumberOfKeys();
         
-        // Step 1: Create B+ Tree
-        dungeonTree = new BPlusTree<int, int>(treeOrder);
-        Debug.Log($"Step 1: Created B+ Tree with order {treeOrder}");
-        
-        // Step 2: Insert keys into tree
+        int attempts = 0;
+        int maxAttempts = 100;
+        bool validTreeGenerated = false;
         List<int> generatedKeys = new List<int>();
-        HashSet<int> usedKeys = new HashSet<int>();
-        
-        // Generate unique random keys
-        while (generatedKeys.Count < numberOfKeys)
+
+        while (!validTreeGenerated && attempts < maxAttempts)
         {
-            // Generate a random key between 1 and 100 (or adjust range based on count)
-            int maxRange = Mathf.Max(100, numberOfKeys * 5);
-            int randomKey = Random.Range(1, maxRange);
+            attempts++;
             
-            if (!usedKeys.Contains(randomKey))
+            // Step 1: Create B+ Tree
+            dungeonTree = new BPlusTree<int, int>(treeOrder);
+            
+            // Step 2: Insert keys into tree
+            generatedKeys = new List<int>();
+            HashSet<int> usedKeys = new HashSet<int>();
+            
+            // Generate unique random keys
+            while (generatedKeys.Count < numberOfKeys)
             {
-                usedKeys.Add(randomKey);
-                generatedKeys.Add(randomKey);
-                dungeonTree.Insert(randomKey, randomKey);
+                // Generate a random key between 1 and 100 (or adjust range based on count)
+                int maxRange = Mathf.Max(100, numberOfKeys * 5);
+                int randomKey = Random.Range(1, maxRange);
+                
+                if (!usedKeys.Contains(randomKey))
+                {
+                    usedKeys.Add(randomKey);
+                    generatedKeys.Add(randomKey);
+                    dungeonTree.Insert(randomKey, randomKey);
+                }
+            }
+
+            // Check Tree Height
+            int currentHeight = dungeonTree.GetHeight();
+            if (currentHeight >= minLevel && currentHeight <= maxLevel)
+            {
+                validTreeGenerated = true;
+                Debug.Log($"Valid tree generated on attempt {attempts}. Height: {currentHeight} (Target: {minLevel}-{maxLevel})");
+            }
+            else
+            {
+                Debug.LogWarning($"Attempt {attempts}: Generated tree height {currentHeight} is out of range ({minLevel}-{maxLevel}). Regenerating...");
+                // Re-roll numberOfKeys within the valid range to try a different count
+                CalculateNumberOfKeys();
             }
         }
-        Debug.Log($"Step 2: Inserted {numberOfKeys} random keys into tree: {string.Join(", ", generatedKeys)}");
+
+        if (!validTreeGenerated)
+        {
+            Debug.LogError($"Failed to generate a valid dungeon tree after {maxAttempts} attempts. Using last generated tree.");
+        }
+
+        Debug.Log($"Step 1 & 2: Created B+ Tree with order {treeOrder} and {numberOfKeys} keys.");
+        Debug.Log($"Keys: {string.Join(", ", generatedKeys)}");
         
         // Step 3: Choose a random target key from the generated keys
         targetRoomKey = generatedKeys[Random.Range(0, generatedKeys.Count)];
@@ -170,4 +215,64 @@ public class DungeonGenerator : MonoBehaviour
     public BPlusTree<int, int> GetDungeonTree() => dungeonTree;
     public int GetTargetKey() => targetRoomKey;
     public int[] GetCorrectPath() => correctSearchPath;
+
+    private void CalculateNumberOfKeys()
+    {
+        minLevel = 3;
+        maxLevel = 3;
+
+        switch (difficultyMode)
+        {
+            case DifficultyMode.Tutorial:
+                treeOrder = 3;
+                minLevel = 3;
+                maxLevel = 3;
+                break;
+            case DifficultyMode.Easy:
+                treeOrder = 3;
+                minLevel = 3;
+                maxLevel = 4;
+                break;
+            case DifficultyMode.Standard:
+                treeOrder = 4;
+                minLevel = 4;
+                maxLevel = 5;
+                break;
+            case DifficultyMode.Hard:
+                treeOrder = 5;
+                minLevel = 5;
+                maxLevel = 6;
+                break;
+        }
+
+        // Calculate min keys to reach minLevel
+        int minKeys = GetMinKeysForHeight(minLevel);
+
+        // Calculate max keys to stay within maxLevel
+        int maxKeys = GetMaxKeysForHeight(maxLevel);
+
+        numberOfKeys = Random.Range(minKeys, maxKeys + 1);
+        Debug.Log($"Difficulty: {difficultyMode}, Level Range: {minLevel}-{maxLevel}, Keys Range: {minKeys}-{maxKeys}, Selected Keys: {numberOfKeys}");
+    }
+
+    private int GetMaxKeysForHeight(int height)
+    {
+        if (height <= 0) return 0;
+        if (height == 1) return treeOrder - 1;
+        
+        // Max keys = m^(h-1) * (m-1)
+        return (int)(Mathf.Pow(treeOrder, height - 1) * (treeOrder - 1));
+    }
+
+    private int GetMinKeysForHeight(int height)
+    {
+        if (height <= 0) return 0;
+        if (height == 1) return 1;
+
+        // Min keys = 2 * ceil(m/2)^(h-2) * ceil((m-1)/2)
+        int minChildren = (int)System.Math.Ceiling(treeOrder / 2.0);
+        int minLeafKeys = (int)System.Math.Ceiling((treeOrder - 1) / 2.0);
+
+        return (int)(2 * Mathf.Pow(minChildren, height - 2) * minLeafKeys);
+    }
 }
