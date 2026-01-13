@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: EVilWizard_Cast
+  m_Name: EvilWizard2_Idle
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
@@ -21,15 +21,27 @@ AnimationClip:
   - serializedVersion: 2
     curve:
     - time: 0
-      value: {fileID: 3743957659742367504, guid: a48b0037be4645c4c913e26853a053cf, type: 3}
+      value: {fileID: -803321122, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - time: 0.125
+      value: {fileID: 1722800662, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - time: 0.25
+      value: {fileID: -722472064, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - time: 0.375
+      value: {fileID: -606836463, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
     - time: 0.5
-      value: {fileID: 8405476814967859603, guid: a48b0037be4645c4c913e26853a053cf, type: 3}
+      value: {fileID: -1332049040, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - time: 0.625
+      value: {fileID: 302371626, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - time: 0.75
+      value: {fileID: 1179212406, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - time: 0.875
+      value: {fileID: -936345048, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
     attribute: m_Sprite
     path: 
     classID: 212
     script: {fileID: 0}
     flags: 2
-  m_SampleRate: 2
+  m_SampleRate: 8
   m_WrapMode: 0
   m_Bounds:
     m_Center: {x: 0, y: 0, z: 0}
@@ -46,8 +58,14 @@ AnimationClip:
       isIntCurve: 0
       isSerializeReferenceCurve: 0
     pptrCurveMapping:
-    - {fileID: 3743957659742367504, guid: a48b0037be4645c4c913e26853a053cf, type: 3}
-    - {fileID: 8405476814967859603, guid: a48b0037be4645c4c913e26853a053cf, type: 3}
+    - {fileID: -803321122, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - {fileID: 1722800662, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - {fileID: -722472064, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - {fileID: -606836463, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - {fileID: -1332049040, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - {fileID: 302371626, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - {fileID: 1179212406, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
+    - {fileID: -936345048, guid: 836ba81373ddf664c8a192783efe0ecd, type: 3}
   m_AnimationClipSettings:
     serializedVersion: 2
     m_AdditiveReferencePoseClip: {fileID: 0}

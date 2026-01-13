@@ -107,7 +107,7 @@ public class DungeonGenerator : MonoBehaviour
         CalculateNumberOfKeys();
         
         int attempts = 0;
-        int maxAttempts = 100;
+        int maxAttempts = 200;
         bool validTreeGenerated = false;
         List<int> generatedKeys = new List<int>();
 

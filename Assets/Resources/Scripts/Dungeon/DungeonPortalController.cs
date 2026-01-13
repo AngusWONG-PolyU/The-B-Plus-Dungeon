@@ -6,10 +6,10 @@ public class DungeonPortalController : MonoBehaviour
 {
     [Header("Dungeon Integration")]
     public DungeonPortalsRoomUpdater dungeonPortalsRoomUpdater;
-    public int childIndex = -1; // Set by DungeonRoomUpdater at runtime
+    public int childIndex = -1; // Set by dungeonPortalsRoomUpdater at runtime
     
     [Header("Teleport Settings")]
-    [HideInInspector] public Transform teleportDestination; // Set by DungeonPortalsRoomUpdater at runtime
+    [HideInInspector] public Transform teleportDestination; // Set by dungeonPortalsRoomUpdater at runtime
     public Vector3 teleportOffset = new Vector3(1, 0, 1);
     public string playerTag = "Player";
     

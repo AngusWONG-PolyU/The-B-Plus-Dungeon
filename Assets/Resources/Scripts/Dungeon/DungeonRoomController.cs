@@ -44,7 +44,7 @@ public class DungeonRoomController : MonoBehaviour
             Debug.Log($"[DungeonRoomController] Auto-assigned {boss.name} as Boss and removed from regular enemies.");
         }
 
-        // 1. At start, disable all the enemies and items.
+        // At start, disable all the enemies and items.
         DisableAllContent();
     }
 
@@ -64,7 +64,7 @@ public class DungeonRoomController : MonoBehaviour
         }
         else
         {
-            // 2. Use a probability to control the room type
+            // Use a probability to control the room type
             float roll = Random.value;
             if (roll < enemyRoomProbability)
             {
