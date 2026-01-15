@@ -103,6 +103,12 @@ public class DungeonGenerator : MonoBehaviour
         SetDungeonActive(true);
         
         Debug.Log("=== GenerateDungeon() called ===");
+        
+        DungeonRoomController dungeonRoomController = FindObjectOfType<DungeonRoomController>();
+        if (dungeonRoomController != null)
+        {
+            dungeonRoomController.ResetBoss();
+        }
 
         CalculateNumberOfKeys();
         

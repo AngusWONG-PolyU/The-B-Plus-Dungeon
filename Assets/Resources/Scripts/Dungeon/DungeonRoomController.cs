@@ -35,17 +35,35 @@ public class DungeonRoomController : MonoBehaviour
             dungeonManager = FindObjectOfType<DungeonManager>();
         }
 
-        // Auto-assign boss from enemies if missing
-        if (boss == null && enemies != null && enemies.Count > 0)
+        // At start, disable all the enemies and items.
+        DisableAllContent();
+    }
+
+    public void ResetBoss()
+    {
+        // 1. If there is a currently assigned boss, put it back into the enemies pool
+        if (boss != null)
+        {
+            if (enemies == null) enemies = new List<GameObject>();
+            
+            // Add back to pool
+            enemies.Add(boss);
+            
+            boss = null;
+        }
+
+        // 2. Pick a new randomly selected boss from the enemies pool
+        if (enemies != null && enemies.Count > 0)
         {
             int index = Random.Range(0, enemies.Count);
             boss = enemies[index];
             enemies.RemoveAt(index);
-            Debug.Log($"[DungeonRoomController] Auto-assigned {boss.name} as Boss and removed from regular enemies.");
+            Debug.Log($"[DungeonRoomController] Assigned {boss.name} as new Boss and removed from enemies pool.");
         }
-
-        // At start, disable all the enemies and items.
-        DisableAllContent();
+        else
+        {
+            Debug.LogWarning("[DungeonRoomController] No enemies available to assign as Boss!");
+        }
     }
 
     public void InitializeRoom(bool isBossRoom = false)
