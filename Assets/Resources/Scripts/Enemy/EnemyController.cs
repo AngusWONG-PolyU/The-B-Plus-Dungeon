@@ -499,7 +499,7 @@ public class EnemyController : MonoBehaviour
         // Notify room controller
         if (roomController != null)
         {
-            roomController.EnemyDefeated(gameObject);
+            roomController.EnemyDefeated();
         }
 
         yield return new WaitForSeconds(delay);

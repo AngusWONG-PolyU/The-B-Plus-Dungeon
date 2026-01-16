@@ -13,19 +13,18 @@ public class DungeonRoomController : MonoBehaviour
     public List<GameObject> enemies; // Enemies present in this room prefab
     public GameObject boss; // Boss present in this room prefab
 
+    [Header("Items")]
+    public List<GameObject> items;
+    private List<GameObject> availableItems; // Available items for the current run
+
     [Header("Room Settings")]
     public bool isCleared = false;
     public bool lockDoorsOnEntry = true;
 
     [Header("References")]
     public List<DungeonStaircase> staircases; // Reference to all staircases in this room
-    public List<GameObject> activeEnemies = new List<GameObject>(); // Currently active enemies
+    public GameObject activeEnemy; // Currently active enemy
     public List<GameObject> doors = new List<GameObject>();
-
-    // Events
-    public delegate void RoomEvent();
-    public event RoomEvent OnRoomCleared;
-    public event RoomEvent OnPlayerEnter;
 
     private void Start()
     {
@@ -37,6 +36,18 @@ public class DungeonRoomController : MonoBehaviour
 
         // At start, disable all the enemies and items.
         DisableAllContent();
+        
+        // Initialize available items
+        if (availableItems == null) ResetItems();
+    }
+
+    public void ResetItems()
+    {
+        if (items != null)
+        {
+            availableItems = new List<GameObject>(items);
+            Debug.Log($"[DungeonRoomController] Reset items list. Count: {availableItems.Count}");
+        }
     }
 
     public void ResetBoss()
@@ -144,7 +155,16 @@ public class DungeonRoomController : MonoBehaviour
             boss.SetActive(false);
         }
 
-        activeEnemies.Clear();
+        // Disable items
+        if (items != null)
+        {
+            foreach (var item in items)
+            {
+                if (item != null) item.SetActive(false);
+            }
+        }
+
+        activeEnemy = null;
     }
 
     private void SetupBossRoom()
@@ -160,7 +180,7 @@ public class DungeonRoomController : MonoBehaviour
                 ec.ResetEnemy();
             }
 
-            activeEnemies.Add(boss);
+            activeEnemy = boss;
             Debug.Log($"Boss Room Setup: Activated Boss {boss.name}");
         }
         else
@@ -194,7 +214,7 @@ public class DungeonRoomController : MonoBehaviour
                 ec.ResetEnemy();
             }
             
-            activeEnemies.Add(selectedEnemy);
+            activeEnemy = selectedEnemy;
             Debug.Log($"Enemy Room: Activated Enemy {selectedEnemy.name}");
         }
         else
@@ -205,9 +225,31 @@ public class DungeonRoomController : MonoBehaviour
 
     private void SetupItemRoom()
     {
-        Debug.Log("Item Room (Empty for now)");
-        // TODO: Implement item room
-        RoomCleared();
+        if (availableItems != null && availableItems.Count > 0)
+        {
+            int index = Random.Range(0, availableItems.Count);
+            GameObject selectedItem = availableItems[index];
+
+            if (selectedItem != null)
+            {
+                selectedItem.SetActive(true);
+                Debug.Log($"Item Room: Activated Item {selectedItem.name}");
+
+                // Check for one-time use
+                DungeonItem di = selectedItem.GetComponent<DungeonItem>();
+                if (di != null && di.isOneTimeUse)
+                {
+                    availableItems.RemoveAt(index);
+                    Debug.Log($"Item {selectedItem.name} is one-time use and has been removed from the pool for this run.");
+                }
+            }
+        }
+        else
+        {
+             Debug.LogWarning("Item Room: No items defined or available in the list!");
+        }
+
+        // RoomCleared();
     }
 
     private void OnTriggerEnter(Collider other)
@@ -220,30 +262,25 @@ public class DungeonRoomController : MonoBehaviour
 
     public void OnPlayerEnterRoom()
     {
-        if (OnPlayerEnter != null) OnPlayerEnter();
-
-        if (!isCleared && lockDoorsOnEntry && activeEnemies.Count > 0)
+        if (!isCleared && lockDoorsOnEntry && activeEnemy != null)
         {
             LockDoors();
         }
-        else if (activeEnemies.Count == 0 && !isCleared)
+        else if (activeEnemy == null && !isCleared)
         {
              // If no enemies, then ensure the room is marked cleared
              RoomCleared();
         }
     }
 
-    public void EnemyDefeated(GameObject enemy)
+    public void EnemyDefeated()
     {
-        if (activeEnemies.Contains(enemy))
-        {
-            activeEnemies.Remove(enemy);
-        }
+        RoomCleared();
+    }
 
-        if (activeEnemies.Count == 0)
-        {
-            RoomCleared();
-        }
+    public void ItemGot()
+    {
+        RoomCleared();
     }
 
     private void RoomCleared()
@@ -252,8 +289,6 @@ public class DungeonRoomController : MonoBehaviour
 
         isCleared = true;
         UnlockDoors();
-        
-        if (OnRoomCleared != null) OnRoomCleared();
         
         Debug.Log("Room Cleared!");
     }

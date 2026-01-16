@@ -17,13 +17,19 @@ public class PlayerSkillController : MonoBehaviour
 
     [Header("System Settings")]
     public bool isSystemActive = true;
+    public float magicScaleMultiplier = 1.0f;
 
     // Runtime State
     private int currentSkillIndex = -1;
     private bool isAiming = false;
     private float[] currentCooldowns;
+    
+    // Runtime Charges (Parallel array to equippedSkills)
+    private int[] currentCharges;
+
     private Camera mainCamera;
     private Animator animator;
+    private PlayerHealth playerHealth;
 
     // Public Getters for UI
     public float GetCurrentCooldown(int index)
@@ -31,6 +37,13 @@ public class PlayerSkillController : MonoBehaviour
         if (currentCooldowns != null && index >= 0 && index < currentCooldowns.Length)
             return currentCooldowns[index];
         return 0f;
+    }
+    
+    public int GetCurrentCharges(int index)
+    {
+        if (currentCharges != null && index >= 0 && index < currentCharges.Length)
+            return currentCharges[index];
+        return -1; // -1 means infinite or invalid
     }
 
     public int GetCurrentSkillIndex()
@@ -42,14 +55,62 @@ public class PlayerSkillController : MonoBehaviour
     {
         mainCamera = Camera.main;
         if (movementScript == null) movementScript = GetComponent<CharacterMovement>();
+        playerHealth = GetComponent<PlayerHealth>();
         
         animator = GetComponentInChildren<Animator>();
 
-        // Initialize Cooldown array
+        // Initialize Arrays
         currentCooldowns = new float[equippedSkills.Length];
+        currentCharges = new int[equippedSkills.Length];
+
+        // Initialize Charges based on SkillData
+        ResetAllSkillCharges();
         
         // Hide all Indicators
         HideIndicators();
+    }
+    
+    public void ResetAllSkillCharges()
+    {
+        // Reset scale multiplier
+        magicScaleMultiplier = 1.0f;
+
+        for(int i=0; i < equippedSkills.Length; i++)
+        {
+            if (equippedSkills[i] != null)
+            {                
+                if (equippedSkills[i].hasUsageLimit)
+                    currentCharges[i] = 0; // Start with 0 charges if it's a dungeon loots mechanic
+                else
+                    currentCharges[i] = -1; // Infinite
+            }
+        }
+    }
+    
+    public void AddSkillCharge(string skillName, int amount)
+    {
+        for (int i = 0; i < equippedSkills.Length; i++)
+        {
+            if (equippedSkills[i] != null && equippedSkills[i].skillName == skillName)
+            {
+                if (equippedSkills[i].hasUsageLimit)
+                {
+                    currentCharges[i] += amount;
+                    if (equippedSkills[i].maxCharges > 0 && currentCharges[i] > equippedSkills[i].maxCharges)
+                        currentCharges[i] = equippedSkills[i].maxCharges;
+
+                    Debug.Log($"Added {amount} charges to {skillName}. Total: {currentCharges[i]}");
+                }
+                return;
+            }
+        }
+        Debug.LogWarning($"Skill {skillName} not found in equipped slots!");
+    }
+
+    public void IncreaseMagicScale(float amount)
+    {
+        magicScaleMultiplier += amount;
+        Debug.Log($"Magic Scale Increased! Current Multiplier: {magicScaleMultiplier}");
     }
 
     void Update()
@@ -123,6 +184,26 @@ public class PlayerSkillController : MonoBehaviour
         {
             Debug.Log($"{equippedSkills[index].skillName} is on cooldown ({currentCooldowns[index]:F1}s).");
             return;
+        }
+        
+        // Check charges
+        if (equippedSkills[index].hasUsageLimit)
+        {
+            if (currentCharges[index] <= 0)
+            {
+                Debug.Log($"{equippedSkills[index].skillName} has no charges left!");
+                return;
+            }
+        }
+
+        // Check Healing Condition
+        if (equippedSkills[index].isHealing && playerHealth != null)
+        {
+            if (playerHealth.currentHearts >= playerHealth.maxHearts)
+            {
+                Debug.Log("HP is full. Cannot use healing magic.");
+                return;
+            }
         }
 
         // If the same key is pressed again, cancel
@@ -234,9 +315,8 @@ public class PlayerSkillController : MonoBehaviour
                             // Calculate scale factor: Target Range / Base Sprite Height
                             float scaleFactor = currentSkill.range / sr.size.y;
                             
-                            // Apply to Z axis (Forward direction)
-                            Vector3 newScale = directionalIndicator.localScale;
-                            newScale.z = scaleFactor;
+                            // Apply to Z axis (Forward direction) and Width (X/Y) based on Magic Scale
+                            Vector3 newScale = new Vector3(magicScaleMultiplier, magicScaleMultiplier, scaleFactor);
                             directionalIndicator.localScale = newScale;
                         }
                     }
@@ -294,6 +374,8 @@ public class PlayerSkillController : MonoBehaviour
                         if (largestSize > 0) maxDiameter = largestSize;
                     }
                     
+                    // Apply Magic Scale Multiplier
+                    maxDiameter *= magicScaleMultiplier;
                     positionalIndicator.localScale = new Vector3(maxDiameter, maxDiameter, 1f);
                 }
             }
@@ -326,6 +408,9 @@ public class PlayerSkillController : MonoBehaviour
                         }
                         if (largestSize > 0) maxDiameter = largestSize;
                     }
+
+                    // Apply Magic Scale Multiplier
+                    maxDiameter *= magicScaleMultiplier;
                     positionalIndicator.localScale = new Vector3(maxDiameter, maxDiameter, 1f);
                 }
             }
@@ -366,6 +451,16 @@ public class PlayerSkillController : MonoBehaviour
         
         // Set Cooldown
         currentCooldowns[currentSkillIndex] = skill.cooldown;
+        
+        // Consume Charge
+        if (skill.hasUsageLimit)
+        {
+            if (currentCharges[currentSkillIndex] > 0)
+            {
+                currentCharges[currentSkillIndex]--;
+                Debug.Log($"{skill.skillName} remaining charges: {currentCharges[currentSkillIndex]}");
+            }
+        }
         
         // End Aiming
         CancelAiming();
@@ -440,6 +535,9 @@ public class PlayerSkillController : MonoBehaviour
             // Initialize Projectile
             if (magicObj != null)
             {
+                // Apply Scale Multiplier
+                magicObj.transform.localScale *= magicScaleMultiplier;
+
                 SpellProjectile proj = magicObj.GetComponent<SpellProjectile>();
                 if (proj != null) 
                 {

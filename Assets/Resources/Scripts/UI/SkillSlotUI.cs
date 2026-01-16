@@ -9,6 +9,8 @@ public class SkillSlotUI : MonoBehaviour
     public Image skillIcon;
     public Image cooldownOverlay; // Set Image Type to 'Filled' in Editor
     public Text cooldownText;
+    public Text chargeText; // Text to display remaining charges
+    public GameObject chargeBackground; // Background for charge text
     public GameObject selectionOutline;
 
     public void Setup(SkillData skill)
@@ -22,12 +24,38 @@ public class SkillSlotUI : MonoBehaviour
             }
             if (cooldownOverlay) cooldownOverlay.fillAmount = 0;
             if (cooldownText) cooldownText.text = "";
+            if (chargeText) chargeText.text = ""; // Initialize empty
+            if (chargeBackground) chargeBackground.SetActive(false);
         }
         else
         {
             if (skillIcon) skillIcon.enabled = false;
             if (cooldownOverlay) cooldownOverlay.fillAmount = 0;
             if (cooldownText) cooldownText.text = "";
+            if (chargeText) chargeText.text = "";
+            if (chargeBackground) chargeBackground.SetActive(false);
+        }
+    }
+
+    public void UpdateCharges(int charges, bool hasLimit)
+    {
+        if (chargeText)
+        {
+            if (hasLimit)
+            {
+                chargeText.text = charges.ToString();
+                chargeText.enabled = true;
+            }
+            else
+            {
+                chargeText.text = "";
+                chargeText.enabled = false;
+            }
+        }
+
+        if (chargeBackground)
+        {
+            chargeBackground.SetActive(hasLimit);
         }
     }
 

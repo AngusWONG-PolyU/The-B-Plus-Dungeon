@@ -83,11 +83,19 @@ public class DungeonGenerator : MonoBehaviour
             }
         }
 
-        // Reset Health when entering the dungeon
+        // Reset Health and Skill Charges when entering the dungeon
         if (active && playerHealth != null)
         {
             playerHealth.ResetHealth();
+            
+            // Reset Skill Charges
+            PlayerSkillController psc = playerHealth.GetComponent<PlayerSkillController>();
+            if (psc != null) psc.ResetAllSkillCharges();
         }
+        
+        // Reset Movement Speed
+        CharacterMovement cm = playerHealth.GetComponent<CharacterMovement>();
+        if (cm != null) cm.ResetSpeed();
     }
 
     // Generate the entire dungeon structure
@@ -108,6 +116,7 @@ public class DungeonGenerator : MonoBehaviour
         if (dungeonRoomController != null)
         {
             dungeonRoomController.ResetBoss();
+            dungeonRoomController.ResetItems(); // Reset available items for the new run
         }
 
         CalculateNumberOfKeys();

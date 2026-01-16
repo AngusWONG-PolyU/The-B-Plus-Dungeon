@@ -21,3 +21,5 @@ MonoBehaviour:
   castTime: 0.2
   skillPrefab: {fileID: 7986504087968017091, guid: 12a56ee4630040c4eb17ae9707ed4cef, type: 3}
   rotationOffset: {x: 0, y: 0, z: 0}
+  hasUsageLimit: 1
+  maxCharges: -1

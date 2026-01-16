@@ -45,6 +45,11 @@ public class SkillUIManager : MonoBehaviour
                 float maxCD = playerSkillController.equippedSkills[i].cooldown;
                 
                 skillSlots[i].UpdateCooldown(currentCD, maxCD);
+
+                // Update Charges
+                int charges = playerSkillController.GetCurrentCharges(i);
+                bool hasLimit = playerSkillController.equippedSkills[i].hasUsageLimit;
+                skillSlots[i].UpdateCharges(charges, hasLimit);
                 
                 // Highlight selected skill
                 skillSlots[i].SetSelected(playerSkillController.GetCurrentSkillIndex() == i);

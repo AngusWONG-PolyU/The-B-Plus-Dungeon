@@ -23,6 +23,8 @@ public class CharacterMovement : MonoBehaviour
     
     private bool isLocked = false; // Flag to track if player is locked
     
+    private float baseSpeed; // Store the initial speed for resetting
+
     void Start()
     {
         playerCamera = Camera.main;
@@ -44,6 +46,10 @@ public class CharacterMovement : MonoBehaviour
         
         // Get the NavMeshAgent
         navAgent = GetComponent<NavMeshAgent>();
+        if (navAgent != null)
+        {
+             baseSpeed = navAgent.speed;
+        }
         
         // Get PlayerSkillController
         skillController = GetComponent<PlayerSkillController>();
@@ -228,6 +234,15 @@ public class CharacterMovement : MonoBehaviour
         if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
         {
             navAgent.isStopped = false;
+        }
+    }
+
+    public void ResetSpeed()
+    {
+        if (navAgent != null)
+        {
+            navAgent.speed = baseSpeed;
+            Debug.Log("CharacterMovement: Speed reset to base value.");
         }
     }
 }
