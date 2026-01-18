@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.EventSystems;
 
 public class CharacterMovement : MonoBehaviour
 {
@@ -61,7 +62,7 @@ public class CharacterMovement : MonoBehaviour
 
     void Update()
     {
-        // If locked, prevent movement input and stop agent
+        // If locked, prevent movement input and stop the agent
         if (isLocked)
         {
             if (navAgent != null && navAgent.enabled) navAgent.ResetPath();
@@ -72,6 +73,9 @@ public class CharacterMovement : MonoBehaviour
         // Check for left mouse button click
         if (Input.GetMouseButtonDown(0))
         {
+            // Prevent movement if clicking on UI
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
+
             // Create a ray from the mouse position on the screen
             Ray ray = playerCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
