@@ -21,6 +21,8 @@ public class EnemyController : MonoBehaviour
     private float attackTimer = 0f;
     private bool isLocked = false;
     private bool isChanting = false;
+    private bool isFrozen = false;
+    private bool criticalVulnerable = false;
     private Coroutine combatCoroutine;
     
     [Header("References")]
@@ -77,6 +79,7 @@ public class EnemyController : MonoBehaviour
         }
         */
         
+        /*
         // Manual Cast Testing
         if (Input.GetKeyDown(KeyCode.L))
         {
@@ -86,6 +89,7 @@ public class EnemyController : MonoBehaviour
         {
             if (attackSkill != null) StartCoroutine(CastMagicRoutine(attackSkill));
         }
+        */
         
         // Destroy Magic Test
         if (Input.GetKeyDown(KeyCode.K))
@@ -134,15 +138,7 @@ public class EnemyController : MonoBehaviour
                 if (attackTimer >= attackInterval)
                 {
                     attackTimer = 0f;
-                    // Randomly choose between Lock Sequence (which leads to attack) or Direct Attack
-                    if (Random.value > 0.5f)
-                    {
-                        StartLockSequence();
-                    }
-                    else
-                    {
-                        StartDirectAttack();
-                    }
+                    StartLockSequence();
                 }
             }
         }
@@ -164,12 +160,6 @@ public class EnemyController : MonoBehaviour
     {
         if (combatCoroutine != null) StopCoroutine(combatCoroutine);
         combatCoroutine = StartCoroutine(ChantRoutine());
-    }
-
-    void StartDirectAttack()
-    {
-        if (combatCoroutine != null) StopCoroutine(combatCoroutine);
-        combatCoroutine = StartCoroutine(DirectAttackRoutine());
     }
 
     IEnumerator LockRoutine()
@@ -217,13 +207,44 @@ public class EnemyController : MonoBehaviour
         isLocked = false; // Transitioning to chant
         isChanting = true;
         isAttacking = true;
+        isFrozen = false;
+        criticalVulnerable = false;
         
         if (animator != null) animator.SetBool("isCasting", true);
         
-        // Chant duration
-        yield return new WaitForSeconds(chantDuration);
+        // Chant duration with check for player unlock
+        float timer = 0f;
+        while (timer < chantDuration)
+        {
+            // If player unlocks themselves (magic destroyed), freeze enemy
+            if (activeLockMagic == null)
+            {
+                isFrozen = true;
+                if (timer < chantDuration / 2f)
+                {
+                    criticalVulnerable = true;
+                    Debug.Log("Critical Vulnerability! Player unlocked before chant is finished halfway.");
+                }
+                else
+                {
+                    Debug.Log("Player unlocked before the chant finished. Freezing.");
+                }
+
+                // Pause Animation
+                if (animator != null) animator.speed = 0f;
+                
+                // Freeze until attacked (wait indefinitely until interrupted)
+                while (true)
+                {
+                    yield return null;
+                }
+            }
+
+            yield return null;
+            timer += Time.deltaTime;
+        }
         
-        // If we reached here, the attack was not interrupted
+        // If we reached here, the attack was not interrupted and player didn't unlock before the chant finished
         if (attackSkill.skillPrefab != null && player != null)
         {
             if (currentActiveMagic != null) Destroy(currentActiveMagic);
@@ -246,34 +267,6 @@ public class EnemyController : MonoBehaviour
         isAttacking = false;
         
         // Small cooldown
-        yield return new WaitForSeconds(1f);
-    }
-
-    IEnumerator DirectAttackRoutine()
-    {
-        isAttacking = true;
-        
-        if (animator != null) animator.SetBool("isCasting", true);
-        
-        yield return new WaitForSeconds(attackSkill.castTime);
-        
-        if (attackSkill.skillPrefab != null && player != null)
-        {
-            if (currentActiveMagic != null) Destroy(currentActiveMagic);
-            
-            currentActiveMagic = Instantiate(attackSkill.skillPrefab, player.position, Quaternion.identity);
-            
-            SpellProjectile proj = currentActiveMagic.GetComponent<SpellProjectile>();
-            if (proj != null)
-            {
-                proj.SetCaster("Enemy");
-            }
-        }
-        
-        if (animator != null) animator.SetBool("isCasting", false);
-        
-        isAttacking = false;
-        
         yield return new WaitForSeconds(1f);
     }
 
@@ -316,102 +309,21 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-    void Attack()
-    {
-        if (isAttacking || attackSkill == null) return;
-        
-        StartCoroutine(CastMagicRoutine(attackSkill));
-    }
-
-    IEnumerator CastMagicRoutine(SkillData skill)
-    {
-        isAttacking = true;
-        
-        if (animator != null)
-        {
-            animator.SetBool("isCasting", true);
-        }
-        
-        // Wait for the cast duration from SkillData
-        yield return new WaitForSeconds(skill.castTime);
-        
-        // Spawn the magic
-        if (skill.skillPrefab != null && player != null)
-        {
-            GameObject newMagic = null;
-
-            // If this is the Lock Skill
-            if (skill == lockSkill)
-            {
-                CharacterMovement cm = player.GetComponent<CharacterMovement>();
-
-                // Destroy previous lock magic if it exists
-                if (activeLockMagic != null) 
-                {
-                    Destroy(activeLockMagic);
-                    if (cm != null) cm.SetLocked(false);
-                }
-                
-                activeLockMagic = Instantiate(skill.skillPrefab, player.position, Quaternion.identity);
-                newMagic = activeLockMagic;
-                
-                // Lock the player
-                if (cm != null)
-                {
-                    cm.StopMovement();
-                    cm.SetLocked(true);
-                }
-            }
-            else
-            {
-                // For other skills (Attack), destroy previous active magic (non-lock)
-                if (currentActiveMagic != null) 
-                {
-                    Destroy(currentActiveMagic);
-                }
-                
-                currentActiveMagic = Instantiate(skill.skillPrefab, player.position, Quaternion.identity);
-                newMagic = currentActiveMagic;
-            }
-            
-            // Initialize Projectile
-            if (newMagic != null)
-            {
-                SpellProjectile proj = newMagic.GetComponent<SpellProjectile>();
-                if (proj != null) 
-                {
-                    proj.SetCaster("Enemy");
-                    
-                    // If this is the Lock Skill, prevent auto-destruction and disable damage
-                    if (skill == lockSkill)
-                    {
-                        proj.manualDestruction = true;
-                        proj.damage = 0;
-                    }
-                }
-            }
-        }
-        
-        if (animator != null)
-        {
-            animator.SetBool("isCasting", false);
-        }
-        
-        // Small cooldown
-        yield return new WaitForSeconds(1f);
-        
-        isAttacking = false;
-    }
-
     void InterruptAttack()
     {
         if (combatCoroutine != null) StopCoroutine(combatCoroutine);
         
-        if (animator != null) animator.SetBool("isCasting", false);
+        if (animator != null) 
+        {
+            animator.SetBool("isCasting", false);
+            animator.speed = 1f; // Restore speed just in case
+        }
         
         isChanting = false;
         isAttacking = false;
         isLocked = false;
+        isFrozen = false;
+        criticalVulnerable = false;
         
         Debug.Log("Enemy Attack Interrupted!");
     }
@@ -420,7 +332,22 @@ public class EnemyController : MonoBehaviour
     {
         if (isDead) return;
         
-        if (isChanting)
+        // Handle Frozen/Critical State
+        if (isFrozen)
+        {
+             if (criticalVulnerable)
+             {
+                 damage *= 2; // Critical Hit
+                 Debug.Log("Critical Hit applied!");
+             }
+             
+             // Unfreeze
+             isFrozen = false;
+             criticalVulnerable = false;
+             if (animator != null) animator.speed = 1f;
+        }
+        
+        if (isChanting || isFrozen) // isFrozen implies we were chanting/waiting
         {
             InterruptAttack();
         }
@@ -459,6 +386,9 @@ public class EnemyController : MonoBehaviour
         attackTimer = 0f;
         isLocked = false;
         isChanting = false;
+        isFrozen = false;
+        criticalVulnerable = false;
+
         if (combatCoroutine != null) StopCoroutine(combatCoroutine);
         
         // Reset Animation
@@ -466,6 +396,7 @@ public class EnemyController : MonoBehaviour
         {
             animator.Rebind();
             animator.Update(0f);
+            animator.speed = 1f;
         }
         
         // Enable physics
