@@ -28,13 +28,13 @@ public class EnemyController : MonoBehaviour
     [Header("References")]
     public Transform player;
     public EnemyHealthBar healthBar;
+    public GameObject shieldObject;
     private DungeonRoomController roomController;
     
     private Animator animator;
     private bool isDead = false;
     private bool isAttacking = false;
     private int currentHealth;
-    private SpriteRenderer spriteRenderer;
     private GameObject currentActiveMagic;
     private GameObject activeLockMagic;
     private PlayerHealth playerHealth;
@@ -42,8 +42,10 @@ public class EnemyController : MonoBehaviour
     void Start()
     {
         animator = GetComponent<Animator>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
         currentHealth = maxHealth;
+        
+        // Initialize Shield logic
+        UpdateShield(true);
         
         if (healthBar != null)
         {
@@ -118,8 +120,8 @@ public class EnemyController : MonoBehaviour
 
         float distance = Vector3.Distance(transform.position, player.position);
 
-        // Always face the player if within detection range
-        if (distance <= detectionRange)
+        // Always face the player if within detection range and not frozen
+        if (distance <= detectionRange && !isFrozen)
         {
             FacePlayer();
         }
@@ -216,10 +218,11 @@ public class EnemyController : MonoBehaviour
         float timer = 0f;
         while (timer < chantDuration)
         {
-            // If player unlocks themselves (magic destroyed), freeze enemy
+            // If the player unlocks themselves (magic destroyed), freeze the enemy
             if (activeLockMagic == null)
             {
                 isFrozen = true;
+                UpdateShield(false); // Disable Shield
                 if (timer < chantDuration / 2f)
                 {
                     criticalVulnerable = true;
@@ -230,21 +233,20 @@ public class EnemyController : MonoBehaviour
                     Debug.Log("Player unlocked before the chant finished. Freezing.");
                 }
 
-                // Pause Animation
-                if (animator != null) animator.speed = 0f;
+                // Trigger Freeze Animation State
+                if (animator != null) animator.SetBool("isFrozen", true);
                 
-                // Freeze until attacked (wait indefinitely until interrupted)
-                while (true)
-                {
-                    yield return null;
-                }
+                // Wait indefinitely until interrupted (by attack)
+                yield return new WaitUntil(() => !isFrozen);
+                
+                yield break;
             }
 
             yield return null;
             timer += Time.deltaTime;
         }
         
-        // If we reached here, the attack was not interrupted and player didn't unlock before the chant finished
+        // If we reached here, the attack was not interrupted and the player didn't unlock before the chant finished
         if (attackSkill.skillPrefab != null && player != null)
         {
             if (currentActiveMagic != null) Destroy(currentActiveMagic);
@@ -313,10 +315,14 @@ public class EnemyController : MonoBehaviour
     {
         if (combatCoroutine != null) StopCoroutine(combatCoroutine);
         
+        // Restore Shield if interrupted
+        UpdateShield(true);
+
         if (animator != null) 
         {
             animator.SetBool("isCasting", false);
-            animator.speed = 1f; // Restore speed just in case
+            animator.SetBool("isFrozen", false);
+            animator.speed = 1f; 
         }
         
         isChanting = false;
@@ -332,25 +338,17 @@ public class EnemyController : MonoBehaviour
     {
         if (isDead) return;
         
-        // Handle Frozen/Critical State
-        if (isFrozen)
+        // Enemy only takes damage when Frozen
+        if (!isFrozen) return;
+        
+        // Handle Critical State
+        if (criticalVulnerable)
         {
-             if (criticalVulnerable)
-             {
-                 damage *= 2; // Critical Hit
-                 Debug.Log("Critical Hit applied!");
-             }
-             
-             // Unfreeze
-             isFrozen = false;
-             criticalVulnerable = false;
-             if (animator != null) animator.speed = 1f;
+            damage *= 2; // Critical Hit
+            Debug.Log("Critical Hit applied!");
         }
         
-        if (isChanting || isFrozen) // isFrozen implies we were chanting/waiting
-        {
-            InterruptAttack();
-        }
+        InterruptAttack();
         
         currentHealth -= damage;
         
@@ -376,6 +374,8 @@ public class EnemyController : MonoBehaviour
         isDead = false;
         currentHealth = maxHealth;
         
+        UpdateShield(true); // Reset Shield
+
         if (healthBar != null)
         {
             healthBar.UpdateHealthBar(currentHealth, maxHealth);
@@ -396,6 +396,8 @@ public class EnemyController : MonoBehaviour
         {
             animator.Rebind();
             animator.Update(0f);
+            animator.SetBool("isFrozen", false);
+            animator.SetBool("isCasting", false);
             animator.speed = 1f;
         }
         
@@ -410,6 +412,7 @@ public class EnemyController : MonoBehaviour
     IEnumerator DieAfterDelay(float delay)
     {
         isDead = true;
+        UpdateShield(false); // Remove Shield
         
         // Unlock player and destroy magic if active
         if (activeLockMagic != null)
@@ -451,6 +454,15 @@ public class EnemyController : MonoBehaviour
         if (activeLockMagic != null)
         {
             Destroy(activeLockMagic);
+        }
+    }
+
+    // Shield Helper
+    void UpdateShield(bool active)
+    {
+        if (shieldObject != null)
+        {
+            shieldObject.SetActive(active);
         }
     }
 
