@@ -17,7 +17,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
     [Header("Combat Settings")]
     public float attackRange = 5f;
     public float attackInterval = 3f;
-    public float chantDuration = 5f;
+    public float chantDuration = 30f;
 
     private bool firstEncounter = true;
     private float attackTimer = 0f;
@@ -40,6 +40,13 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
     private GameObject currentActiveMagic;
     private GameObject activeLockMagic;
     private PlayerHealth playerHealth;
+
+    private float baseChantDuration; // Store original duration
+
+    private void Awake()
+    {
+        baseChantDuration = chantDuration; // Initialize base duration once
+    }
 
     void Start()
     {
@@ -382,6 +389,11 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         {
             if (animator != null) animator.SetTrigger("takeHit");
         }
+    }
+
+    public void SetChantDurationMultiplier(float multiplier)
+    {
+        chantDuration = baseChantDuration * multiplier;
     }
 
     public void ResetEnemy()

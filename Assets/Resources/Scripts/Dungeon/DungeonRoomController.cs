@@ -178,6 +178,12 @@ public class DungeonRoomController : MonoBehaviour
             if (ec != null)
             {
                 ec.ResetEnemy();
+
+                if (dungeonManager != null && dungeonManager.dungeonGenerator != null)
+                {
+                    ec.SetChantDurationMultiplier(dungeonManager.dungeonGenerator.GetChantDurationMultiplier());
+                    Debug.Log($"[DungeonRoomController] Boss chant duration set to {ec.chantDuration}");
+                }
             }
 
             activeEnemy = boss;
@@ -212,6 +218,12 @@ public class DungeonRoomController : MonoBehaviour
             if (ec != null)
             {
                 ec.ResetEnemy();
+
+                if (dungeonManager != null && dungeonManager.dungeonGenerator != null)
+                {
+                    ec.SetChantDurationMultiplier(dungeonManager.dungeonGenerator.GetChantDurationMultiplier());
+                    Debug.Log($"[DungeonRoomController] Enemy chant duration set to {ec.chantDuration}");
+                }
             }
             
             activeEnemy = selectedEnemy;

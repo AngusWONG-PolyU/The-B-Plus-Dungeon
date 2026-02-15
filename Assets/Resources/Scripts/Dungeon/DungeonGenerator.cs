@@ -290,4 +290,21 @@ public class DungeonGenerator : MonoBehaviour
 
         return (int)(2 * Mathf.Pow(minChildren, height - 2) * minLeafKeys);
     }
+
+    public float GetChantDurationMultiplier()
+    {
+        switch (difficultyMode)
+        {
+            case DifficultyMode.Tutorial:
+                return 1.6f; // Slower
+            case DifficultyMode.Easy:
+                return 1.2f; // Slightly Slower
+            case DifficultyMode.Standard:
+                return 1.0f; // Normal
+            case DifficultyMode.Hard:
+                return 0.5f; // Faster (Half time)
+            default:
+                return 1.0f;
+        }
+    }
 }
