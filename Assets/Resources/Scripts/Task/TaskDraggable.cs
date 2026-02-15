@@ -12,6 +12,7 @@ public class TaskDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     private CanvasGroup _canvasGroup;
     public Transform originalParent;
     public Vector3 originalPosition;
+    private int _originalSiblingIndex; // Store index to restore order
     public bool isSuccess = false; // Flag to check if dropped successfully
 
     private void Awake()
@@ -29,6 +30,7 @@ public class TaskDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         isSuccess = false;
         originalParent = transform.parent;
         originalPosition = transform.position;
+        _originalSiblingIndex = transform.GetSiblingIndex(); // Save index
 
         // Visual feedback
         _canvasGroup.alpha = 0.6f;
@@ -69,6 +71,7 @@ public class TaskDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     public void ReturnToStart()
     {
         transform.SetParent(originalParent);
+        transform.SetSiblingIndex(_originalSiblingIndex); // Restore order
         transform.position = originalPosition;
     }
 }

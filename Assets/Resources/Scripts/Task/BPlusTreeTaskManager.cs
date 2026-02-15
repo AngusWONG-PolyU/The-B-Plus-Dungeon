@@ -100,7 +100,18 @@ public class BPlusTreeTaskManager : MonoBehaviour
         }
 
         // 4. Visualize it
+        RefreshTree();
+    }
+
+    public void RefreshTree()
+    {
         if(treeVisualizer) treeVisualizer.RenderTree(_currentTree);
+    }
+    
+    public void CheckTreeStatus(BPlusTreeVisualNode node)
+    {
+         // Validate Tree after operations
+         // If fully correct -> Win
     }
 
     public void CloseTask(bool success)

@@ -13,11 +13,33 @@ public class BPlusTreeVisualNode : MonoBehaviour
     // Data
     public BPlusTreeNode<int, string> CoreNode { get; private set; }
     public List<GameObject> SpawnedKeys { get; private set; } = new List<GameObject>();
+    
+    // Track highlight state for interactivity checks
+    public bool IsHighlighted { get; private set; }
 
     public void Initialize(BPlusTreeNode<int, string> node)
     {
         CoreNode = node;
         RenderKeys();
+    }
+
+    public void SetHighlight(bool isError)
+    {
+        IsHighlighted = isError;
+        Image img = GetComponent<Image>();
+        if(img != null)
+        {
+            // Red for error (underflow/overflow), White/Gray for normal
+            img.color = isError ? new Color(1f, 0.5f, 0.5f, 0.8f) : new Color(1f, 1f, 1f, 0.5f);
+        }
+        
+        // Pulse animation or Outline color change
+        Outline outline = GetComponent<Outline>();
+        if(outline != null)
+        {
+             outline.effectColor = isError ? Color.red : Color.black;
+             outline.effectDistance = isError ? new Vector2(3, -3) : new Vector2(2, -2);
+        }
     }
 
     public void RenderKeys()
