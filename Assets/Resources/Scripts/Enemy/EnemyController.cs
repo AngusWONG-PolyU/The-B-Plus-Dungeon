@@ -2,8 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyController : MonoBehaviour
+public class EnemyController : MonoBehaviour, ITaskTrigger
 {
+    private bool isTaskCompleted = false;
+
     [Header("Stats")]
     public int maxHealth = 3;
     public float detectionRange = 10f;
@@ -211,15 +213,22 @@ public class EnemyController : MonoBehaviour
         isAttacking = true;
         isFrozen = false;
         criticalVulnerable = false;
+        isTaskCompleted = false;
         
         if (animator != null) animator.SetBool("isCasting", true);
+
+        // Start the Task
+        if (BPlusTreeTaskManager.Instance != null)
+        {
+            BPlusTreeTaskManager.Instance.StartTask(this, BPlusTreeTaskType.Deletion);
+        }
         
         // Chant duration with check for player unlock
         float timer = 0f;
         while (timer < chantDuration)
         {
-            // If the player unlocks themselves (magic destroyed), freeze the enemy
-            if (activeLockMagic == null)
+            // If the player completes the task successfully
+            if (isTaskCompleted)
             {
                 isFrozen = true;
                 UpdateShield(false); // Disable Shield
@@ -246,6 +255,12 @@ public class EnemyController : MonoBehaviour
             timer += Time.deltaTime;
         }
         
+        // If we reached here, the timeout occurred (Task failed or time ran out)
+        if (BPlusTreeTaskManager.Instance != null)
+        {
+            BPlusTreeTaskManager.Instance.CloseTask(false);
+        }
+
         // If we reached here, the attack was not interrupted and the player didn't unlock before the chant finished
         if (attackSkill.skillPrefab != null && player != null)
         {
@@ -471,6 +486,15 @@ public class EnemyController : MonoBehaviour
         if (playerHealth != null)
         {
             playerHealth.OnPlayerDeath.RemoveListener(OnPlayerDied);
+        }
+    }
+
+    // Call from Manager
+    public void OnTaskComplete(bool success)
+    {
+        if (success)
+        {
+            isTaskCompleted = true;
         }
     }
 }

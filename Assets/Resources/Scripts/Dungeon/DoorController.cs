@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class DoorController : MonoBehaviour
+public class DoorController : MonoBehaviour, ITaskTrigger
 {
     public enum DoorType { Disappearing, Sliding, Rotating }
     
+    [Header("Task Interaction")]
+    public bool requiresTask = false;
+    public bool isTaskLocked = false;
+
     [Header("Settings")]
     public DoorType type = DoorType.Disappearing;
     public float animationDuration = 1.0f;
@@ -114,5 +118,31 @@ public class DoorController : MonoBehaviour
             yield return null;
         }
         transform.localRotation = targetRot;
+    }
+
+    private void OnMouseDown()
+    {
+        if (requiresTask && isTaskLocked && !isOpen)
+        {
+            if (BPlusTreeTaskManager.Instance != null)
+            {
+                // Trigger Insertion Task for unlocking
+                BPlusTreeTaskManager.Instance.StartTask(this, BPlusTreeTaskType.Insertion);
+            }
+        }
+    }
+
+    public void OnTaskComplete(bool success)
+    {
+        if (success)
+        {
+            Debug.Log("Door Unlocked by Task!");
+            isTaskLocked = false;
+            Open();
+        }
+        else
+        {
+            Debug.Log("Door Task Failed.");
+        }
     }
 }
