@@ -25,6 +25,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
     private bool isChanting = false;
     private bool isFrozen = false;
     private bool criticalVulnerable = false;
+    private bool forceFinishChant = false; 
     private Coroutine combatCoroutine;
     
     [Header("References")]
@@ -221,7 +222,8 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         isFrozen = false;
         criticalVulnerable = false;
         isTaskCompleted = false;
-        
+        forceFinishChant = false;
+
         if (animator != null) animator.SetBool("isCasting", true);
 
         // Start the Task
@@ -234,6 +236,11 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         float timer = 0f;
         while (timer < chantDuration)
         {
+            if (forceFinishChant)
+            {
+                break;
+            }
+
             // If the player completes the task successfully
             if (isTaskCompleted)
             {
@@ -394,6 +401,11 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
     public void SetChantDurationMultiplier(float multiplier)
     {
         chantDuration = baseChantDuration * multiplier;
+    }
+
+    public void ForceFinishChant()
+    {
+        forceFinishChant = true;
     }
 
     public void ResetEnemy()

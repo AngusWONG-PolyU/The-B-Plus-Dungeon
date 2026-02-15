@@ -14,6 +14,7 @@ public class TaskDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     public Vector3 originalPosition;
     private int _originalSiblingIndex; // Store index to restore order
     public bool isSuccess = false; // Flag to check if dropped successfully
+    private bool _isDragging = false; 
 
     private void Awake()
     {
@@ -27,6 +28,10 @@ public class TaskDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     {
         if (TaskDragManager.Instance == null) return;
         
+        // Prevent drag if confirmation panel is open (Time is paused)
+        if (Time.timeScale == 0f) return;
+
+        _isDragging = true;
         isSuccess = false;
         originalParent = transform.parent;
         originalPosition = transform.position;
@@ -48,7 +53,7 @@ public class TaskDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (_canvas == null) return;
+        if (!_isDragging || _canvas == null) return;
         
         // Follow mouse
         _rectTransform.anchoredPosition += eventData.delta / _canvas.scaleFactor;
@@ -56,6 +61,10 @@ public class TaskDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        if (!_isDragging) return;
+
+        _isDragging = false;
+        
         _canvasGroup.alpha = 1f;
         _canvasGroup.blocksRaycasts = true;
 

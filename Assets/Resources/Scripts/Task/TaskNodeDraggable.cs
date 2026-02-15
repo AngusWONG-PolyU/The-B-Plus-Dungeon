@@ -25,6 +25,9 @@ public class TaskNodeDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler,
     {
         if(TaskDragManager.Instance == null) return;
 
+        // Prevent drag if confirmation panel is open (Time is paused)
+        if (Time.timeScale == 0f) return;
+
         // Tutorial Restriction Check
         if (!IsDragAllowed()) 
         {
@@ -60,10 +63,9 @@ public class TaskNodeDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler,
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (_isDragging && _canvas != null)
-        {
-            _rectTransform.anchoredPosition += eventData.delta / _canvas.scaleFactor;
-        }
+        if (!_isDragging || _canvas == null) return;
+
+        _rectTransform.anchoredPosition += eventData.delta / _canvas.scaleFactor;
     }
 
     public void OnEndDrag(PointerEventData eventData)
