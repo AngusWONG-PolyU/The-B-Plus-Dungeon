@@ -244,6 +244,16 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
             // If the player completes the task successfully
             if (isTaskCompleted)
             {
+                // Destroy the lock magic for the player
+                Destroy(activeLockMagic);
+                
+                // Unlock player when magic is destroyed
+                if (player != null)
+                {
+                    CharacterMovement cm = player.GetComponent<CharacterMovement>();
+                    if (cm != null) cm.SetLocked(false);
+                }
+                
                 isFrozen = true;
                 UpdateShield(false); // Disable Shield
                 if (timer < chantDuration / 2f)
@@ -275,7 +285,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
             BPlusTreeTaskManager.Instance.CloseTask(false);
         }
 
-        // If we reached here, the attack was not interrupted and the player didn't unlock before the chant finished
+        // If we reached here, the attack was not interrupted, and the player didn't unlock before the chant finished
         if (attackSkill.skillPrefab != null && player != null)
         {
             if (currentActiveMagic != null) Destroy(currentActiveMagic);

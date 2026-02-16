@@ -35,6 +35,10 @@ public class BPlusTreeTaskManager : MonoBehaviour
     private BPlusTree<int, string> _currentTree;
     private ITaskTrigger _currentTrigger; 
     private BPlusTreeTaskType _currentTaskType;
+    
+    // Fields for validation
+    private int _targetKey;
+    private HashSet<int> _initialKeys;
 
     private void Awake()
     {
@@ -72,7 +76,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
         DungeonGenerator dungeonGen = FindObjectOfType<DungeonGenerator>();
         if(dungeonGen != null)
         {
-             // Use Generator's order to keep consistency
+             // Use the Generator's order to keep consistency
              treeOrder = dungeonGen.treeOrder > 0 ? dungeonGen.treeOrder : 3;
              
              // Scale keys based on difficulty
@@ -89,21 +93,43 @@ public class BPlusTreeTaskManager : MonoBehaviour
         
         // 3. Generate Random Keys
         // Ensure no duplicates
-        HashSet<int> usedKeys = new HashSet<int>();
+        _initialKeys = new HashSet<int>();
         List<int> keysToInsert = new List<int>();
         
         while(keysToInsert.Count < keysParams)
         {
             int r = Random.Range(1, 100);
-            if(!usedKeys.Contains(r))
+            if(!_initialKeys.Contains(r))
             {
-                usedKeys.Add(r);
+                _initialKeys.Add(r);
                 keysToInsert.Add(r);
                 _currentTree.Insert(r, "val-" + r);
             }
         }
 
-        // 4. Visualize it
+        // 4. Determine Target Key based on Initial State
+        if (type == BPlusTreeTaskType.Deletion)
+        {
+            // Pick an existing key to delete
+            List<int> existingKeys = new List<int>(_initialKeys);
+            _targetKey = existingKeys[Random.Range(0, existingKeys.Count)];
+            
+            if(taskTitleText) taskTitleText.text = $"Delete Key {_targetKey} to Break the Spell!";
+        }
+        else // Insertion
+        {
+            // Pick a NEW key to insert
+            int candidate = Random.Range(1, 100);
+            while(_initialKeys.Contains(candidate))
+            {
+                candidate = Random.Range(1, 100);
+            }
+            _targetKey = candidate;
+            
+            if(taskTitleText) taskTitleText.text = $"Insert Key {_targetKey} to Unlock the Door!";
+        }
+
+        // 5. Visualize it
         RefreshTree();
     }
 
@@ -112,10 +138,65 @@ public class BPlusTreeTaskManager : MonoBehaviour
         if(treeVisualizer) treeVisualizer.RenderTree(_currentTree);
     }
     
-    public void CheckTreeStatus(BPlusTreeVisualNode node)
+    public bool CheckTreeStatus(BPlusTree<int, string> tree)
     {
-         // Validate Tree after operations
-         // If fully correct -> Win
+        /* Currently, only check for the leaf for simplification and debugging */
+        // 1. Construct the Expected Set of Keys
+        HashSet<int> expectedKeys = new HashSet<int>(_initialKeys);
+
+        if (_currentTaskType == BPlusTreeTaskType.Insertion)
+        {
+            expectedKeys.Add(_targetKey);
+        }
+        else if (_currentTaskType == BPlusTreeTaskType.Deletion)
+        {
+            expectedKeys.Remove(_targetKey);
+        }
+
+        // 2. Collect Actual Keys from the Tree
+        List<int> actualKeys = new List<int>();
+        CollectKeys(tree.Root, actualKeys);
+
+        // 3. Compare Count
+        if (actualKeys.Count != expectedKeys.Count)
+        {
+            Debug.Log($"Validation Failed: Content Mismatch. Expected {expectedKeys.Count} keys, found {actualKeys.Count}.");
+            return false;
+        }
+
+        // 4. Compare Content
+        foreach (int key in actualKeys)
+        {
+            if (!expectedKeys.Contains(key))
+            {
+                Debug.Log($"Validation Failed: Found unexpected key {key}.");
+                return false;
+            }
+        }
+
+        // 5. TODO: Structural Validation can go here
+        // e.g., checking if the tree is balanced, property order is correct, etc.
+
+        return true;
+    }
+
+    private void CollectKeys(BPlusTreeNode<int, string> node, List<int> results)
+    {
+        if (node == null) return;
+
+        // If it's a leaf, add its keys
+        if (node.IsLeaf)
+        {
+            results.AddRange(node.Keys);
+        }
+        else
+        {
+            // If internal, traverse children
+            foreach (var child in node.Children)
+            {
+                CollectKeys(child, results);
+            }
+        }
     }
 
     public void CloseTask(bool success)
@@ -128,8 +209,8 @@ public class BPlusTreeTaskManager : MonoBehaviour
         }
     }
 
-    // Methods for task closing confirmation
-    public void TryToCloseTask()
+    // Methods for task submission confirmation
+    public void ConfirmToSubmitTask()
     {
         if (confirmationPanel != null)
         {
@@ -138,34 +219,39 @@ public class BPlusTreeTaskManager : MonoBehaviour
         }
         else
         {
-            // Fallback if no UI assigned
-            CloseTask(false);
+            // Fallback if no confirmation panel is set, directly submit
+            ConfirmSubmit();
         }
     }
 
-    public void ConfirmGiveUp()
+    public void ConfirmSubmit()
     {
+        // Restore time
         Time.timeScale = 1f;
+        if (confirmationPanel != null) confirmationPanel.SetActive(false);
 
-        // Check if the trigger is an enemy, if so, force finish the chant to attack
-        if (_currentTrigger is EnemyController enemyController)
+        // Perform the check
+        bool success = CheckTreeStatus(_currentTree);
+        
+        // Handle specific gameplay penalties for failure before closing
+        if (!success)
         {
-            enemyController.ForceFinishChant();
-        }
-        else
-        {
-            // TODO: Implement give up for the door task, maybe simply close the task and wait for restart?
+            // Check if the trigger is an enemy, if so, force finish the chant to attack
+            if (_currentTrigger is EnemyController enemyController)
+            {
+                enemyController.ForceFinishChant();
+            }
+            else
+            {
+                // TODO: Implement penalty for the incorrect door task, maybe simply close the task and wait for a restart?
+            }
         }
 
-        // 2. Close the task as failed
-        CloseTask(false);
-
-        // 3. Hide the confirmation panel
-        if (confirmationPanel != null) 
-            confirmationPanel.SetActive(false);
+        // Close the task
+        CloseTask(success);
     }
 
-    public void CancelGiveUp()
+    public void CancelSubmit()
     {
         if (confirmationPanel != null) 
             confirmationPanel.SetActive(false);
