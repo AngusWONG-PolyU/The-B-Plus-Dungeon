@@ -83,7 +83,7 @@ public class PlayerHealth : MonoBehaviour
         currentHearts = maxHearts;
         
         // Unlock movement
-        if (movement != null) movement.SetLocked(false);
+        if (movement != null) movement.ForceUnlock();
         
         // Re-enable Skills (Only if Dungeon is Active)
         PlayerSkillController skillController = GetComponent<PlayerSkillController>();

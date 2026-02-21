@@ -285,6 +285,17 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
             BPlusTreeTaskManager.Instance.CloseTask(false);
         }
 
+        // Cleanup lock magic on failure
+        if (activeLockMagic != null)
+        {
+            Destroy(activeLockMagic);
+            if (player != null)
+            {
+                CharacterMovement cm = player.GetComponent<CharacterMovement>();
+                if (cm != null) cm.SetLocked(false);
+            }
+        }
+
         // If we reached here, the attack was not interrupted, and the player didn't unlock before the chant finished
         if (attackSkill.skillPrefab != null && player != null)
         {

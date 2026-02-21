@@ -22,7 +22,8 @@ public class CharacterMovement : MonoBehaviour
     public GameObject targetEffect;
     private ParticleSystem targetEffectSystem;
     
-    private bool isLocked = false; // Flag to track if player is locked
+    private int lockCount = 0; // Counter for multiple lock sources
+    public bool isLocked => lockCount > 0; // Derived property
     
     private float baseSpeed; // Store the initial speed for resetting
 
@@ -199,15 +200,32 @@ public class CharacterMovement : MonoBehaviour
         Debug.Log("Character movement stopped by external script");
     }
 
+    // Force reset all locks (e.g., on respawn)
+    public void ForceUnlock()
+    {
+        lockCount = 0;
+        SetLocked(false); // Update state to unlocked
+    }
+
     // Public method to lock/unlock player movement
     public void SetLocked(bool locked)
     {
-        isLocked = locked;
+        if (locked)
+        {
+            lockCount++;
+        }
+        else
+        {
+            lockCount--;
+            if (lockCount < 0) lockCount = 0;
+        }
+
+        bool currentlyLocked = isLocked;
         
         // Lock/Unlock Skills
         if (skillController != null)
         {
-            if (locked)
+            if (currentlyLocked)
             {
                 skillController.isSystemActive = false;
             }
@@ -219,16 +237,16 @@ public class CharacterMovement : MonoBehaviour
             }
         }
 
-        if (isLocked)
+        if (currentlyLocked)
         {
             // Stop immediately when locked
             if (navAgent != null && navAgent.enabled) navAgent.ResetPath();
             SetRunningAnimation(false);
-            Debug.Log("Player movement LOCKED");
+            // Debug.Log($"Player movement LOCKED (Count: {lockCount})");
         }
         else
         {
-            Debug.Log("Player movement UNLOCKED");
+            // Debug.Log($"Player movement UNLOCKED (Count: {lockCount})");
         }
     }
     
