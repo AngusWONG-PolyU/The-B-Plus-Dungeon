@@ -158,6 +158,10 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         // Handle Click when Locked to start Chant
         if (isLocked && Input.GetMouseButtonDown(0))
         {
+            if (PlayerInstructionUI.Instance != null)
+            {
+                PlayerInstructionUI.Instance.HideInstruction();
+            }
             StartChantSequence();
         }
     }
@@ -211,6 +215,12 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         if (animator != null) animator.SetBool("isCasting", false);
         
         isAttacking = false;
+        // Inform player to Left Click
+        if (PlayerInstructionUI.Instance != null)
+        {
+            PlayerInstructionUI.Instance.ShowInstruction("Left Click Anywhere to Break the Spell!");
+        }
+
         isLocked = true; // Now waiting for player input
     }
 
@@ -250,6 +260,11 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
             // If the player completes the task successfully
             if (isTaskCompleted)
             {
+                if (PlayerInstructionUI.Instance != null)
+                {
+                    PlayerInstructionUI.Instance.ShowInstruction("Spell Broken! Enemy Backfired by its Own Magic!\nATTACK NOW!", 3f);
+                }
+
                 // Destroy the lock magic for the player
                 Destroy(activeLockMagic);
                 

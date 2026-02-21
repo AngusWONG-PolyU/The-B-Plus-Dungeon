@@ -23,6 +23,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
 
     [Header("UI References")]
     public GameObject taskCanvas; 
+    public GameObject bufferArea;
     public BPlusTreeVisualizer treeVisualizer;
     public TextMeshProUGUI taskTitleText; 
     public TextMeshProUGUI timerText;
@@ -47,6 +48,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
         else Destroy(gameObject);
         
         if(taskCanvas) taskCanvas.SetActive(false);
+        if(bufferArea) bufferArea.SetActive(false);
         if(confirmationPanel) confirmationPanel.SetActive(false);
     }
 
@@ -56,6 +58,8 @@ public class BPlusTreeTaskManager : MonoBehaviour
         _currentTaskType = taskType;
         
         if(taskCanvas) taskCanvas.SetActive(true);
+        if(bufferArea) bufferArea.SetActive(taskType == BPlusTreeTaskType.Insertion);
+
         if(timerText) 
         {
             timerText.gameObject.SetActive(true);
