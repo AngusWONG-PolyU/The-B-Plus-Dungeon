@@ -241,6 +241,12 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
                 break;
             }
 
+            // Update Task Timer UI
+            if (BPlusTreeTaskManager.Instance != null)
+            {
+                BPlusTreeTaskManager.Instance.UpdateTaskTimer(chantDuration - timer, chantDuration);
+            }
+
             // If the player completes the task successfully
             if (isTaskCompleted)
             {

@@ -25,6 +25,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
     public GameObject taskCanvas; 
     public BPlusTreeVisualizer treeVisualizer;
     public TextMeshProUGUI taskTitleText; 
+    public TextMeshProUGUI timerText;
 
     [Header("Confirmation UI")]
     public GameObject confirmationPanel;
@@ -55,6 +56,12 @@ public class BPlusTreeTaskManager : MonoBehaviour
         _currentTaskType = taskType;
         
         if(taskCanvas) taskCanvas.SetActive(true);
+        if(timerText) 
+        {
+            timerText.gameObject.SetActive(true);
+            timerText.color = Color.white;
+            timerText.text = "";
+        }
         
         if(taskTitleText)
         {
@@ -114,7 +121,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
             List<int> existingKeys = new List<int>(_initialKeys);
             _targetKey = existingKeys[Random.Range(0, existingKeys.Count)];
             
-            if(taskTitleText) taskTitleText.text = $"Delete Key {_targetKey} to Break the Spell!";
+            if(taskTitleText) taskTitleText.text = $"Delete Key <color=#FFD700>{_targetKey}</color> to Break the Spell!";
         }
         else // Insertion
         {
@@ -126,11 +133,21 @@ public class BPlusTreeTaskManager : MonoBehaviour
             }
             _targetKey = candidate;
             
-            if(taskTitleText) taskTitleText.text = $"Insert Key {_targetKey} to Unlock the Door!";
+            if(taskTitleText) taskTitleText.text = $"Insert Key <color=#FFD700>{_targetKey}</color> to Unlock the Door!";
         }
 
         // 5. Visualize it
         RefreshTree();
+    }
+
+    public void UpdateTaskTimer(float remainingTime, float totalDuration)
+    {
+        if(timerText != null) 
+        {
+            timerText.text = $"Time: {remainingTime:F1}s";
+            if(remainingTime <= totalDuration / 2f) timerText.color = Color.red;
+            else timerText.color = Color.white;
+        }
     }
 
     public void RefreshTree()
@@ -202,7 +219,14 @@ public class BPlusTreeTaskManager : MonoBehaviour
     public void CloseTask(bool success)
     {
         if(taskCanvas) taskCanvas.SetActive(false);
+        if(timerText) timerText.gameObject.SetActive(false);
         
+        // Hide the context menu when closing the task canvas
+        if (TaskContextMenu.Instance != null)
+        {
+            TaskContextMenu.Instance.HideMenu();
+        }
+
         if(_currentTrigger != null)
         {
             _currentTrigger.OnTaskComplete(success);
