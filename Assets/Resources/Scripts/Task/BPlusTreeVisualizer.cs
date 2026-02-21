@@ -35,8 +35,8 @@ public class BPlusTreeVisualizer : MonoBehaviour
         // 3. Layout Internal Nodes (Bottom-Up)
         LayoutInternalNodes(tree.Root);
         
-        // 4. Center the whole tree in the container
-        CenterTree();
+        // 4. Center and Scale the whole tree
+        CenterAndFitTree();
 
         // 5. Draw Connections
         DrawConnectionsRecursive(tree.Root);
@@ -117,24 +117,54 @@ public class BPlusTreeVisualizer : MonoBehaviour
         return d;
     }
 
-    private void CenterTree()
+    private void CenterAndFitTree()
     {
-        if (_nodeMap.Count == 0) return;
+        if (_nodeMap.Count == 0 || treeContainer == null) return;
         
-        // Calculate Bounds
-        float minX = float.MaxValue;
-        float maxX = float.MinValue;
+        // Reset scale to 1 before calculation
+        treeContainer.localScale = Vector3.one;
+
+        // Calculate Tree Bounds
+        float leftEdge = float.MaxValue;
+        float rightEdge = float.MinValue;
+        
         foreach (var rt in _nodeMap.Values)
         {
-            if (rt.localPosition.x < minX) minX = rt.localPosition.x;
-            if (rt.localPosition.x > maxX) maxX = rt.localPosition.x;
+            float halfWidth = rt.rect.width / 2f;
+            float x = rt.localPosition.x;
+            
+            if (x - halfWidth < leftEdge) leftEdge = x - halfWidth;
+            if (x + halfWidth > rightEdge) rightEdge = x + halfWidth;
         }
         
-        float mid = (minX + maxX) / 2f;
-        
+        // Center alignment
+        float mid = (leftEdge + rightEdge) / 2f;
         foreach (var rt in _nodeMap.Values)
         {
             rt.localPosition -= new Vector3(mid, 0, 0);
+        }
+
+        // Auto Scaling Logic
+        float treeWidth = rightEdge - leftEdge;
+        
+        // Determine available width from Parent
+        RectTransform parentRect = treeContainer.parent as RectTransform;
+        if (parentRect != null)
+        {
+            float availableWidth = parentRect.rect.width;
+            
+            // Add padding
+            float padding = 100f; 
+            float maxAllowedWidth = availableWidth - padding;
+
+            if (maxAllowedWidth > 0 && treeWidth > maxAllowedWidth)
+            {
+                float scaleFactor = maxAllowedWidth / treeWidth;
+                // Clamp scale to not be too tiny
+                scaleFactor = Mathf.Max(scaleFactor, 0.4f); 
+                
+                treeContainer.localScale = new Vector3(scaleFactor, scaleFactor, 1f);
+            }
         }
     }
     
