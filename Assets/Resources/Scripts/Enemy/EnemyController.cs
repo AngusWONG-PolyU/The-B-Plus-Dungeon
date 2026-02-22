@@ -260,11 +260,6 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
             // If the player completes the task successfully
             if (isTaskCompleted)
             {
-                if (PlayerInstructionUI.Instance != null)
-                {
-                    PlayerInstructionUI.Instance.ShowInstruction("Spell Broken! Enemy Backfired by its Own Magic!\nATTACK NOW!", 3f);
-                }
-
                 // Destroy the lock magic for the player
                 Destroy(activeLockMagic);
                 
@@ -281,10 +276,18 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
                 {
                     criticalVulnerable = true;
                     Debug.Log("Critical Vulnerability! Player unlocked before chant is finished halfway.");
+                    if (PlayerInstructionUI.Instance != null)
+                    {
+                        PlayerInstructionUI.Instance.ShowInstruction("Speed Breaker! Rapid mana collapse exposed a fatal flaw!\nNEXT ATTACK CRITICAL!", 3f);
+                    }
                 }
                 else
                 {
                     Debug.Log("Player unlocked before the chant finished. Freezing.");
+                    if (PlayerInstructionUI.Instance != null)
+                    {
+                        PlayerInstructionUI.Instance.ShowInstruction("Spell Broken! Enemy Stunned by Backlash!\nATTACK NOW!", 3f);
+                    }
                 }
 
                 // Trigger Freeze Animation State
@@ -301,6 +304,13 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         }
         
         // If we reached here, the timeout occurred (Task failed or time ran out)
+
+        string failMessage = forceFinishChant ? "Disruption Failed! Energy Surge Accelerated the Spell!\nBRACE FOR IMPACT!" : "Time's Up! Spell Cast Complete!\nBRACE FOR IMPACT!";
+        if (PlayerInstructionUI.Instance != null)
+        {
+            PlayerInstructionUI.Instance.ShowInstruction(failMessage, 3f);
+        }
+
         if (BPlusTreeTaskManager.Instance != null)
         {
             BPlusTreeTaskManager.Instance.CloseTask(false);
