@@ -66,7 +66,24 @@ public class TaskContextMenu : MonoBehaviour
         if (deleteKeyButton) 
         {
             deleteKeyButton.gameObject.SetActive(true);
-            deleteKeyButton.interactable = true;
+            
+            // Check Deletion constraints
+            bool canDelete = true;
+            if (BPlusTreeTaskManager.Instance != null && 
+                BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion)
+            {
+                int val = target.GetValue();
+                BPlusTreeVisualNode parentNode = target.GetParentVisualNode();
+                bool isLeaf = (parentNode != null && parentNode.CoreNode != null && parentNode.CoreNode.IsLeaf);
+                
+                // Restriction applies effectively only to Leaf nodes
+                if (isLeaf && val != BPlusTreeTaskManager.Instance.TargetKey)
+                {
+                    canDelete = false;
+                }
+            }
+            
+            deleteKeyButton.interactable = canDelete;
         }
 
         if (deleteNodeButton) 

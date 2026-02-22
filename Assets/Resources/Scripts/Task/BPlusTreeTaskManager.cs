@@ -40,9 +40,11 @@ public class BPlusTreeTaskManager : MonoBehaviour
 
     private ITaskTrigger _currentTrigger; 
     private BPlusTreeTaskType _currentTaskType;
+    public BPlusTreeTaskType CurrentTaskType => _currentTaskType;
     
     // Fields for validation
     private int _targetKey;
+    public int TargetKey => _targetKey;
     private HashSet<int> _initialKeys;
 
     // Expose method to update root (for manual manipulation like CopyUp triggering root split)
