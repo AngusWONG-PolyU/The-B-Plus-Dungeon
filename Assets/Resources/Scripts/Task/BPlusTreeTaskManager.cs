@@ -27,6 +27,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
     public BPlusTreeVisualizer treeVisualizer;
     public TextMeshProUGUI taskTitleText; 
     public TextMeshProUGUI timerText;
+    public TextMeshProUGUI treeOrderText;
 
     [Header("Confirmation UI")]
     public GameObject confirmationPanel;
@@ -35,6 +36,8 @@ public class BPlusTreeTaskManager : MonoBehaviour
     public int treeOrder = 3; // Default fallback
     
     private BPlusTree<int, string> _currentTree;
+    public BPlusTree<int, string> CurrentTree => _currentTree;
+
     private ITaskTrigger _currentTrigger; 
     private BPlusTreeTaskType _currentTaskType;
     
@@ -76,6 +79,13 @@ public class BPlusTreeTaskManager : MonoBehaviour
             timerText.color = Color.white;
             timerText.text = "";
         }
+
+        if(treeOrderText)
+        {
+            treeOrderText.gameObject.SetActive(true);
+            treeOrderText.color = Color.white;
+            treeOrderText.text = "";
+        }
         
         if(taskTitleText)
         {
@@ -107,6 +117,12 @@ public class BPlusTreeTaskManager : MonoBehaviour
                  case DungeonGenerator.DifficultyMode.Standard: keysParams = Random.Range(15, 21); break;
                  case DungeonGenerator.DifficultyMode.Hard: keysParams = Random.Range(20, 26); break;
              }
+        }
+
+        // Update Tree Order Text
+        if(treeOrderText != null)
+        {
+            treeOrderText.text = $"Order: <color=#FFD700>{treeOrder}</color>";
         }
 
         // 2. Create the tree
@@ -285,6 +301,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
     {
         if(taskCanvas) taskCanvas.SetActive(false);
         if(timerText) timerText.gameObject.SetActive(false);
+        if(treeOrderText) treeOrderText.gameObject.SetActive(false);
         
         // Hide the context menu when closing the task canvas
         if (TaskContextMenu.Instance != null)
