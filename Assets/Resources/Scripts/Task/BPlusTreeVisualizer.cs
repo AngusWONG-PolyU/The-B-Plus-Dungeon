@@ -95,7 +95,7 @@ public class BPlusTreeVisualizer : MonoBehaviour
             LayoutInternalNodes(child);
         }
 
-        // Now place myself based on children
+        // Now place myself based on the children
         RectTransform myRt = _nodeMap[node];
         RectTransform firstChild = _nodeMap[node.Children[0]];
         RectTransform lastChild = _nodeMap[node.Children[node.Children.Count - 1]];
@@ -173,19 +173,73 @@ public class BPlusTreeVisualizer : MonoBehaviour
         if (node.IsLeaf || node.Children == null) return;
 
         RectTransform parentRect = _nodeMap[node];
+        BPlusTreeVisualNode visualNode = parentRect.GetComponent<BPlusTreeVisualNode>();
         
-        foreach (var child in node.Children)
+        int numKeys = node.Keys.Count;
+        // Rules: i keys -> i+1 lines. 0 keys -> 0 lines.
+        int connectionLimit = (numKeys == 0) ? 0 : numKeys + 1;
+
+        // Iterate through ALL children to ensure recursive drawing continues 
+        // regardless of whether a connection line is drawn from this node to them.
+        for (int i = 0; i < node.Children.Count; i++)
         {
-            RectTransform childRect = _nodeMap[child];
-            if (childRect != null)
+            var child = node.Children[i];
+            if (_nodeMap.ContainsKey(child))
             {
-                CreateConnection(parentRect, childRect);
+                // Only draw a connection if within the limit based on key count
+                if (i < connectionLimit)
+                {
+                    RectTransform childRect = _nodeMap[child];
+                    float xOffset = GetChildConnectionXOffset(visualNode, i);
+                    CreateConnection(parentRect, childRect, xOffset);
+                }
+                
+                // Always recurse to child
                 DrawConnectionsRecursive(child);
             }
         }
     }
 
-    private void CreateConnection(RectTransform parent, RectTransform child)
+    private float GetChildConnectionXOffset(BPlusTreeVisualNode visualNode, int childIndex)
+    {
+        if (visualNode.SpawnedKeys.Count == 0) return 0f;
+        
+        // Ensure layout is up to date (might be redundant but safe)
+        // LayoutRebuilder.ForceRebuildLayoutImmediate(visualNode.GetComponent<RectTransform>());
+
+        RectTransform nodeRect = visualNode.GetComponent<RectTransform>();
+        
+        if (childIndex == 0)
+        {
+            // Left of first key
+            RectTransform keyRect = visualNode.SpawnedKeys[0].GetComponent<RectTransform>();
+            // Use world position to handle nested hierarchy correctly
+            Vector3 worldPos = keyRect.position; 
+            Vector3 localPos = nodeRect.InverseTransformPoint(worldPos);
+            return localPos.x - (keyRect.rect.width / 2f);
+        }
+        else if (childIndex >= visualNode.SpawnedKeys.Count) 
+        {
+            // Right of last key
+            RectTransform keyRect = visualNode.SpawnedKeys[visualNode.SpawnedKeys.Count - 1].GetComponent<RectTransform>();
+            Vector3 worldPos = keyRect.position; 
+            Vector3 localPos = nodeRect.InverseTransformPoint(worldPos);
+            return localPos.x + (keyRect.rect.width / 2f);
+        }
+        else
+        {
+            // Between keys [i-1] and [i]
+            RectTransform leftKey = visualNode.SpawnedKeys[childIndex - 1].GetComponent<RectTransform>();
+            RectTransform rightKey = visualNode.SpawnedKeys[childIndex].GetComponent<RectTransform>();
+            
+            float leftX = nodeRect.InverseTransformPoint(leftKey.position).x + (leftKey.rect.width / 2f);
+            float rightX = nodeRect.InverseTransformPoint(rightKey.position).x - (rightKey.rect.width / 2f);
+            
+            return (leftX + rightX) / 2f;
+        }
+    }
+
+    private void CreateConnection(RectTransform parent, RectTransform child, float xOffset)
     {
         if (linkLinePrefab == null) return;
 
@@ -196,10 +250,10 @@ public class BPlusTreeVisualizer : MonoBehaviour
         RectTransform lineRect = lineObj.GetComponent<RectTransform>();
         
         // Calculate dynamic start/end points relative to container
-        // Start: Parent Bottom-Center
+        // Start: Parent Bottom-Center + Offset
         // End: Child Top-Center
         
-        Vector3 startPos = parent.localPosition + new Vector3(0, -parent.rect.height / 2f, 0);
+        Vector3 startPos = parent.localPosition + new Vector3(xOffset, -parent.rect.height / 2f, 0);
         Vector3 endPos = child.localPosition + new Vector3(0, child.rect.height / 2f, 0);
         
         Vector3 direction = endPos - startPos;
