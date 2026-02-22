@@ -14,7 +14,8 @@ public class TaskDragManager : MonoBehaviour
     
     // Key Dragging
     private TaskDraggable _currentItem;
-    
+    public bool IsKeyDragging => isDragging;
+
     // Node Dragging
     public bool IsNodeDragging { get; private set; }
     private BPlusTreeVisualNode _dragedNode;
@@ -25,7 +26,8 @@ public class TaskDragManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    // Key Dragging
+    #region Drag Listeners
+
     public void StartDragging(TaskDraggable item)
     {
         _currentItem = item;
@@ -34,11 +36,10 @@ public class TaskDragManager : MonoBehaviour
 
     public void StopDragging()
     {
-        if (_currentItem != null) _currentItem = null;
+        _currentItem = null;
         isDragging = false;
     }
 
-    // Node Dragging
     public void StartNodeDragging(BPlusTreeVisualNode node)
     {
         _dragedNode = node;
@@ -47,141 +48,260 @@ public class TaskDragManager : MonoBehaviour
 
     public void StopNodeDragging(PointerEventData eventData)
     {
-        // Drop logic is handled by DropZone. If we are here, it means either:
-        // 1. Dropped on nothing (Reset)
-        // 2. Already dropped on DropZone (Success) -> Logic handled there
-        
         _dragedNode = null;
         IsNodeDragging = false;
     }
-    
-    // Call from DropZone for Node Merge
-    public bool HandleNodeDrop(BPlusTreeVisualNode targetNode)
+
+    #endregion
+
+    #region Drop Logic (Key & Node)
+
+    // TODO: Restrict from leaf to any internal node except its parent node
+    // Main Entry Point for Key Drops
+    public bool HandleKeyDrop(TaskDraggable draggable, BPlusTreeVisualNode targetNode)
     {
-        if (_dragedNode == null || targetNode == null) return false;
-        if (_dragedNode == targetNode) return false; // Can't merge with self
-        
-        Debug.Log($"Dropped Node (Keys: {_dragedNode.CoreNode.Keys.Count}) onto Node (Keys: {targetNode.CoreNode.Keys.Count})");
+        if (draggable == null || targetNode == null) return false;
 
-        // Logic Check: Must be Siblings to Merge directly (in standard implementation)
-        if (_dragedNode.CoreNode.Parent != targetNode.CoreNode.Parent)
+        // 1. Extract Key Value
+        int keyVal = GetValueFromDraggable(draggable);
+        if (keyVal == -1) return false;
+
+        // 2. Identify Source Node
+        if (draggable.originalParent == null) return false;
+        BPlusTreeVisualNode sourceNode = draggable.originalParent.GetComponentInParent<BPlusTreeVisualNode>();
+        if (sourceNode == null) return false;
+        
+        // Validation calls
+        if (sourceNode == targetNode) return false;
+
+        Debug.Log($"Handling Key Drop: Key {keyVal} from {sourceNode.name} to {targetNode.name}");
+
+        // 3. COPY UP: Leaf -> Parent
+        // Standard behavior: Copy up only happens when promoting a key to the immediate parent
+        if (sourceNode.CoreNode.IsLeaf && sourceNode.CoreNode.Parent == targetNode.CoreNode)
         {
-            Debug.LogWarning("Cannot merge nodes with different parents!");
-            return false;
+            Debug.Log("Operation: Copy Up (Leaf -> Parent)");
+            PerformCopyUp(targetNode, keyVal);
+            Destroy(draggable.gameObject); 
+            return true; 
         }
 
-        // Merge Logic
-        // 1. Move all Keys from Dragged Node to Target Node
-        targetNode.CoreNode.Keys.AddRange(_dragedNode.CoreNode.Keys);
-        targetNode.CoreNode.Keys.Sort();
+        // 4. MOVE: Node -> Node (Leaf->Leaf or Internal->Internal)
+        Debug.Log("Operation: Move Key (Borrow/Redistribute)");
+        PerformMoveKey(sourceNode, targetNode, keyVal);
         
-        // 2. Remove Dragged Node from Parent
-        if (_dragedNode.CoreNode.Parent != null)
-        {
-            var parent = _dragedNode.CoreNode.Parent;
-            int draggedIndex = parent.Children.IndexOf(_dragedNode.CoreNode);
-
-            if (draggedIndex != -1)
-            {
-                int originalChildCount = parent.Children.Count;
-                parent.Children.RemoveAt(draggedIndex);
-
-                if (parent.Keys.Count > 0)
-                {
-                    int keyIndexToRemove = (draggedIndex == originalChildCount - 1) ? draggedIndex - 1 : draggedIndex;
-                    if (keyIndexToRemove >= 0 && keyIndexToRemove < parent.Keys.Count)
-                    {
-                        parent.Keys.RemoveAt(keyIndexToRemove);
-                    }
-                }
-            }
-        }
-
-        // 3. Clear Dragged Node Data
-        _dragedNode.CoreNode.Keys.Clear();
-        
-        // 4. Update UI
-        if(BPlusTreeTaskManager.Instance != null)
-        {
-            BPlusTreeTaskManager.Instance.RefreshTree();
-            StartCoroutine(ValidateAllNodesRoutine());
-        }
-
+        Destroy(draggable.gameObject);
         return true;
     }
-    
-    // Deletion Logic
-    
+
+    // Main Entry Point for Node Merging
+    public bool HandleNodeDrop(BPlusTreeVisualNode targetNode)
+    {
+        if (_dragedNode == null || targetNode == null || _dragedNode == targetNode) return false;
+        
+        Debug.Log($"Handling Node Drop: Merge {_dragedNode.name} into {targetNode.name}");
+
+        // 1. Merge Data
+        if (targetNode.CoreNode.IsLeaf)
+        {
+            MergeLeafNodes(_dragedNode, targetNode);
+        }
+        else
+        {
+            MergeInternalNodes(_dragedNode, targetNode);
+        }
+
+        // 2. Cleanup Old Node Structure
+        RemoveNodeFromStructure(_dragedNode);
+
+        // 3. Refresh Tree
+        UpdateTreeVisuals();
+        
+        return true;
+    }
+
     public void DeleteKey(BPlusTreeVisualNode visualNode, int key)
     {
-        if(visualNode == null) return;
-        
-        Debug.Log($"Attempting to delete Key {key} from Node.");
-        
-        // Use IndexOf to remove from both Keys and Values if it's a leaf
-        int index = visualNode.CoreNode.Keys.IndexOf(key);
-        if (index != -1)
+        if (visualNode == null) return;
+
+        // Restriction Check for Deletion Task
+        if (BPlusTreeTaskManager.Instance != null && 
+            BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion)
         {
-            // 1. Remove from Core Data (Keys & Values if leaf)
-            visualNode.CoreNode.Keys.RemoveAt(index);
-            
-            if (visualNode.CoreNode.IsLeaf && visualNode.CoreNode.Values != null && index < visualNode.CoreNode.Values.Count)
+            // Only enforce strict target check on Leaf Nodes
+            if (visualNode.CoreNode.IsLeaf && key != BPlusTreeTaskManager.Instance.TargetKey)
             {
-                visualNode.CoreNode.Values.RemoveAt(index);
+                Debug.LogWarning($"Deletion Task: Can only delete target key {BPlusTreeTaskManager.Instance.TargetKey} from leaf.");
+                return;
+            }
+        }
+
+        Debug.Log($"Deleting Key {key} from {visualNode.name}");
+        RemoveKeyFromNode(visualNode, key);
+        UpdateTreeVisuals();
+    }
+
+    public void DeleteNode(BPlusTreeVisualNode visualNode)
+    {
+        if (visualNode == null || visualNode.CoreNode == null) return;
+        
+        // Root Protection
+        if (visualNode.CoreNode == BPlusTreeTaskManager.Instance.CurrentTree.Root)
+        {
+            Debug.LogWarning("Cannot delete root node directly.");
+            return;
+        }
+
+        Debug.Log($"Deleting Node {visualNode.name}");
+        RemoveNodeFromStructure(visualNode);
+        UpdateTreeVisuals();
+    }
+
+    // Public method for Context Menu to call
+    public void CopyKeyToParent(BPlusTreeVisualNode node, int key)
+    {
+        if (node == null || node.CoreNode == null) return;
+
+        // Validation
+        if (!node.CoreNode.IsLeaf)
+        {
+            Debug.LogWarning("Copy Up is only valid for Leaf Nodes.");
+            return;
+        }
+
+        // Handle No Parent (Root)
+        if (node.CoreNode.Parent == null)
+        {
+            CreateNewRootFromChild(node.CoreNode);
+            return;
+        }
+        
+        BPlusTreeNode<int, string> parentNode = node.CoreNode.Parent;
+        if (parentNode.Keys.Contains(key)) return;
+
+        parentNode.Keys.Add(key);
+        parentNode.Keys.Sort();
+        
+        UpdateTreeVisuals();
+    }
+
+    #endregion
+
+    #region Operation Helpers
+    
+    // Copy Up Logic
+    // Used by Drag & Drop which has a target visual node
+    private void PerformCopyUp(BPlusTreeVisualNode targetInternalNode, int key)
+    {
+        // Check duplicate
+        if (targetInternalNode.CoreNode.Keys.Contains(key)) return;
+
+        // Add to internal node
+        targetInternalNode.CoreNode.Keys.Add(key);
+        targetInternalNode.CoreNode.Keys.Sort();
+        
+        UpdateTreeVisuals();
+    }
+
+    // Move Key Logic
+    private void PerformMoveKey(BPlusTreeVisualNode source, BPlusTreeVisualNode target, int key)
+    {
+        // 1. Remove from source
+        RemoveKeyFromNode(source, key);
+
+        // 2. Add to the target
+        AddKeyToNode(target, key);
+
+        UpdateTreeVisuals();
+    }
+
+    // Merge Leaf Logic
+    private void MergeLeafNodes(BPlusTreeVisualNode source, BPlusTreeVisualNode target)
+    {
+        // Combine Key-Value Pairs
+        var combined = new List<KeyValuePair<int, string>>();
+        ExtractPairs(target.CoreNode, combined);
+        ExtractPairs(source.CoreNode, combined);
+
+        // Sort
+        combined.Sort((a, b) => a.Key.CompareTo(b.Key));
+
+        // Reapply to Target
+        target.CoreNode.Keys.Clear();
+        if (target.CoreNode.Values == null) target.CoreNode.Values = new List<string>();
+        target.CoreNode.Values.Clear();
+
+        foreach(var pair in combined)
+        {
+            target.CoreNode.Keys.Add(pair.Key);
+            target.CoreNode.Values.Add(pair.Value);
+        }
+        
+        // Clear source for safety
+        source.CoreNode.Keys.Clear();
+    }
+
+    // Merge Internal Logic
+    private void MergeInternalNodes(BPlusTreeVisualNode source, BPlusTreeVisualNode target)
+    {
+        // Move Keys
+        target.CoreNode.Keys.AddRange(source.CoreNode.Keys);
+        target.CoreNode.Keys.Sort();
+
+        // Move Children
+        if (source.CoreNode.Children != null)
+        {
+            target.CoreNode.Children.AddRange(source.CoreNode.Children);
+            foreach(var c in source.CoreNode.Children) c.Parent = target.CoreNode;
+            
+            // Sort Children by looking at their first key
+            target.CoreNode.Children.Sort((a, b) => {
+                int keyA = (a.Keys.Count > 0) ? a.Keys[0] : int.MinValue;
+                int keyB = (b.Keys.Count > 0) ? b.Keys[0] : int.MinValue;
+                return keyA.CompareTo(keyB);
+            });
+        }
+        
+        source.CoreNode.Keys.Clear();
+        source.CoreNode.Children.Clear();
+    }
+
+    // Cleanup Logic (Linked List + Parent Ref)
+    private void RemoveNodeFromStructure(BPlusTreeVisualNode node)
+    {
+        var coreNode = node.CoreNode;
+        var parent = coreNode.Parent;
+
+        if (parent != null)
+        {
+            // 1. Maintain Linked List if Leaf
+            if (coreNode.IsLeaf)
+            {
+                UnlinkLeafNode(coreNode);
             }
 
-            // 2. Refresh Tree
-             if(BPlusTreeTaskManager.Instance != null)
-             {
-                 BPlusTreeTaskManager.Instance.RefreshTree();
-                 
-                 // 3. Check ALL nodes for underflow AFTER refresh
-                 StartCoroutine(ValidateAllNodesRoutine());
-             }
+            // 2. Remove reference from parent
+            parent.Children.Remove(coreNode);
         }
     }
 
-    public void CopyKeyToParent(BPlusTreeVisualNode node, int key)
+    private void UnlinkLeafNode(BPlusTreeNode<int, string> node)
     {
-        if (node == null || node.CoreNode == null) 
+        var current = BPlusTreeTaskManager.Instance.CurrentTree.FirstLeaf;
+        if (current == node)
         {
-            return;
+            BPlusTreeTaskManager.Instance.CurrentTree.FirstLeaf = current.Next;
         }
-
-        // Validate: Only allow Copy Up from Leaf Nodes
-        if (!node.CoreNode.IsLeaf)
+        else
         {
-            Debug.LogWarning("Copy Up is only valid for Leaf Nodes in B+ Trees.");
-            return;
-        }
-
-        // Handle Case: No Parent (Root Node) -> Create New Root
-        if (node.CoreNode.Parent == null)
-        {
-            Debug.Log("Creating new Root for Copy Up operation.");
-            CreateNewRootFromChild(node.CoreNode);
-        }
-
-        var parentNode = node.CoreNode.Parent;
-        
-        // Check if key already exists in parent
-        if (parentNode.Keys.Contains(key))
-        {
-            Debug.Log($"Parent node already contains key {key}.");
-            return;
-        }
-
-        // Add key to parent
-        parentNode.Keys.Add(key);
-        parentNode.Keys.Sort();
-
-        Debug.Log($"Copied key {key} to parent node.");
-
-        // Refresh Visuals
-        if(BPlusTreeTaskManager.Instance != null)
-        {
-            BPlusTreeTaskManager.Instance.RefreshTree();
-            StartCoroutine(ValidateAllNodesRoutine());
+            while (current != null && current.Next != node)
+            {
+                current = current.Next;
+            }
+            if (current != null)
+            {
+                current.Next = node.Next;
+            }
         }
     }
 
@@ -200,17 +320,81 @@ public class TaskDragManager : MonoBehaviour
             BPlusTreeTaskManager.Instance.UpdateTreeRoot(newRoot);
         }
 
-        // Refresh Visuals
-        if(BPlusTreeTaskManager.Instance != null)
+        UpdateTreeVisuals();
+    }
+
+    #endregion
+
+
+    #region Data Mutation Helpers
+
+    private void RemoveKeyFromNode(BPlusTreeVisualNode visualNode, int key)
+    {
+        int index = visualNode.CoreNode.Keys.IndexOf(key);
+        if (index != -1)
+        {
+            visualNode.CoreNode.Keys.RemoveAt(index);
+            
+            // Auto-remove value if leaf
+            if (visualNode.CoreNode.IsLeaf && visualNode.CoreNode.Values != null && index < visualNode.CoreNode.Values.Count)
+            {
+                visualNode.CoreNode.Values.RemoveAt(index);
+            }
+        }
+    }
+
+    private void AddKeyToNode(BPlusTreeVisualNode visualNode, int key)
+    {
+        visualNode.CoreNode.Keys.Add(key);
+        visualNode.CoreNode.Keys.Sort();
+        
+        // Auto-add dummy value if leaf
+        if (visualNode.CoreNode.IsLeaf)
+        {
+            if (visualNode.CoreNode.Values == null) visualNode.CoreNode.Values = new List<string>();
+            
+            // Re-sync values based on sorted keys
+            // Simple approach: Insert default val at the new index of the key
+            int newIndex = visualNode.CoreNode.Keys.IndexOf(key);
+            visualNode.CoreNode.Values.Insert(newIndex, "val-" + key);
+        }
+    }
+
+    private void ExtractPairs(BPlusTreeNode<int, string> node, List<KeyValuePair<int, string>> results)
+    {
+        for(int i=0; i<node.Keys.Count; i++)
+        {
+            string val = (node.Values != null && i < node.Values.Count) ? node.Values[i] : "";
+            results.Add(new KeyValuePair<int, string>(node.Keys[i], val));
+        }
+    }
+
+    private int GetValueFromDraggable(TaskDraggable draggable)
+    {
+        var textComp = draggable.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+        if (textComp != null && int.TryParse(textComp.text, out int val1)) return val1;
+        
+        var txt = draggable.GetComponentInChildren<Text>();
+        if (txt != null && int.TryParse(txt.text, out int val2)) return val2;
+        
+        return -1;
+    }
+
+    #endregion
+
+    #region Visualization & Validation
+
+    private void UpdateTreeVisuals()
+    {
+        if (BPlusTreeTaskManager.Instance != null)
         {
             BPlusTreeTaskManager.Instance.RefreshTree();
             StartCoroutine(ValidateAllNodesRoutine());
         }
     }
-    
+
     private IEnumerator ValidateAllNodesRoutine()
     {
-        // Wait for frame end to ensure visuals are spawned
         yield return new WaitForEndOfFrame();
         
         BPlusTreeVisualNode[] allNodes = FindObjectsOfType<BPlusTreeVisualNode>();
@@ -222,22 +406,20 @@ public class TaskDragManager : MonoBehaviour
 
     private void CheckUnderflow(BPlusTreeVisualNode node)
     {
+        if (node == null || node.CoreNode == null) return;
+        
         int order = BPlusTreeTaskManager.Instance.treeOrder;
         int minKeys = (int)Mathf.Ceil((order - 1) / 2.0f);
         
-        if (node.CoreNode.Keys.Count < minKeys)
+        bool isUnderflow = node.CoreNode.Keys.Count < minKeys;
+        
+        // Conditional Highlight
+        if (isUnderflow && ShouldHighlightError())
         {
-            Debug.LogWarning($"Node Underflow! Keys: {node.CoreNode.Keys.Count}, Min: {minKeys}");
-            
-            // Highlight Logic based on Difficulty
-            if (ShouldHighlightError())
-            {
-                node.SetHighlight(true);
-            }
+            node.SetHighlight(true);
         }
         else
         {
-            // Reset to normal if fixed
             node.SetHighlight(false); 
         }
     }
@@ -245,51 +427,12 @@ public class TaskDragManager : MonoBehaviour
     private bool ShouldHighlightError()
     {
         DungeonGenerator dungeonGen = FindObjectOfType<DungeonGenerator>();
-        if(dungeonGen != null)
+        if (dungeonGen != null)
         {
             return dungeonGen.difficultyMode == DungeonGenerator.DifficultyMode.Tutorial;
         }
-        return true; // Default to allow highlight if no dungeon gen found (testing)
+        return true; 
     }
 
-    // Helper to find root (temporary)
-    private BPlusTree<int, string> GetTreeRoot(BPlusTreeNode<int, string> node)
-    {
-        // ... traverse up ...
-        return null; 
-    }
-
-    // Call from DropZone logic or OnEndDrag
-    public bool HandleKeyDrop(TaskDraggable draggable, BPlusTreeVisualNode targetNode)
-    {
-        if (draggable == null || targetNode == null) return false;
-
-        // Get value
-        var textComp = draggable.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-        if (textComp == null || !int.TryParse(textComp.text, out int keyVal)) return false;
-
-        // Check source
-        BPlusTreeVisualNode sourceNode = draggable.originalParent.GetComponentInParent<BPlusTreeVisualNode>();
-        if (sourceNode == null || sourceNode == targetNode) return false;
-
-        Debug.Log($"Moving Key {keyVal} from Node {sourceNode.name} to {targetNode.name}");
-
-        // Move Logic (Borrow / Redistribution)
-        // 1. Remove from source
-        sourceNode.CoreNode.Keys.Remove(keyVal);
-        
-        // 2. Add to the target
-        targetNode.CoreNode.Keys.Add(keyVal);
-        targetNode.CoreNode.Keys.Sort(); // Keep sorted
-
-        // 3. Update Visuals
-        if (BPlusTreeTaskManager.Instance != null)
-        {
-            BPlusTreeTaskManager.Instance.RefreshTree();
-            StartCoroutine(ValidateAllNodesRoutine());
-        }
-
-        Destroy(draggable.gameObject); // Cleanup old visual (Refreshed anyway)
-        return true;
-    }
+    #endregion
 }
