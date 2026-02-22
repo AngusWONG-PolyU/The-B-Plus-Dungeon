@@ -42,6 +42,16 @@ public class BPlusTreeTaskManager : MonoBehaviour
     private int _targetKey;
     private HashSet<int> _initialKeys;
 
+    // Expose method to update root (for manual manipulation like CopyUp triggering root split)
+    public void UpdateTreeRoot(BPlusTreeNode<int, string> newRoot)
+    {
+        if (_currentTree != null)
+        {
+            _currentTree.Root = newRoot;
+            RefreshTree();
+        }
+    }
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -195,10 +205,61 @@ public class BPlusTreeTaskManager : MonoBehaviour
             }
         }
 
-        // 5. TODO: Structural Validation can go here
-        // e.g., checking if the tree is balanced, property order is correct, etc.
+        // 5. Structural Validation
+        if (!tree.ValidateTree()) 
+        {
+             Debug.Log("Validation Failed: Tree internal structure is invalid (ValidateTree failed).");
+             return false;
+        }
+
+        // 6. Internal Keys Consistency
+        if (!CheckInternalKeysConsistency(tree.Root, out string error))
+        {
+            Debug.Log($"Validation Failed: Internal Node Consistency. {error}");
+            return false;
+        }
 
         return true;
+    }
+
+    private bool CheckInternalKeysConsistency(BPlusTreeNode<int, string> node, out string error)
+    {
+        error = "";
+        if (node.IsLeaf) return true;
+
+        for (int i = 0; i < node.Keys.Count; i++)
+        {
+            int internalKey = node.Keys[i];
+            
+            // Get the minimum key of the right child subtree
+            int rightSubtreeMin = GetSubtreeMin(node.Children[i+1]);
+
+            // Check if the internal key matches the minimum key of the right subtree
+            if (internalKey != rightSubtreeMin)
+            {
+                 error = $"Internal Key {internalKey} does not match Min of Right Subtree ({rightSubtreeMin}). Did you forget to update the parent?";
+                 return false;
+            }
+        }
+
+        foreach (var child in node.Children)
+        {
+            if (!CheckInternalKeysConsistency(child, out error)) return false;
+        }
+
+        return true;
+    }
+
+    private int GetSubtreeMin(BPlusTreeNode<int, string> node)
+    {
+        if (node.IsLeaf)
+        {
+            return node.Keys.Count > 0 ? node.Keys[0] : int.MaxValue; 
+        }
+        else
+        {
+            return GetSubtreeMin(node.Children[0]);
+        }
     }
 
     private void CollectKeys(BPlusTreeNode<int, string> node, List<int> results)

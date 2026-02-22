@@ -78,9 +78,23 @@ public class TaskDragManager : MonoBehaviour
         // 2. Remove Dragged Node from Parent
         if (_dragedNode.CoreNode.Parent != null)
         {
-            _dragedNode.CoreNode.Parent.Children.Remove(_dragedNode.CoreNode);
-            // Also need to handle Separator Key in Parent... (Simplified for prototype: just remove node)
-            // Ideally: Remove the separator key that was pointing to _dragedNode
+            var parent = _dragedNode.CoreNode.Parent;
+            int draggedIndex = parent.Children.IndexOf(_dragedNode.CoreNode);
+
+            if (draggedIndex != -1)
+            {
+                int originalChildCount = parent.Children.Count;
+                parent.Children.RemoveAt(draggedIndex);
+
+                if (parent.Keys.Count > 0)
+                {
+                    int keyIndexToRemove = (draggedIndex == originalChildCount - 1) ? draggedIndex - 1 : draggedIndex;
+                    if (keyIndexToRemove >= 0 && keyIndexToRemove < parent.Keys.Count)
+                    {
+                        parent.Keys.RemoveAt(keyIndexToRemove);
+                    }
+                }
+            }
         }
 
         // 3. Clear Dragged Node Data
@@ -104,12 +118,19 @@ public class TaskDragManager : MonoBehaviour
         
         Debug.Log($"Attempting to delete Key {key} from Node.");
         
-        // 1. Remove from Core Data
-        bool removed = visualNode.CoreNode.Keys.Remove(key);
-        
-        if(removed)
+        // Use IndexOf to remove from both Keys and Values if it's a leaf
+        int index = visualNode.CoreNode.Keys.IndexOf(key);
+        if (index != -1)
         {
-             // 2. Refresh Tree
+            // 1. Remove from Core Data (Keys & Values if leaf)
+            visualNode.CoreNode.Keys.RemoveAt(index);
+            
+            if (visualNode.CoreNode.IsLeaf && visualNode.CoreNode.Values != null && index < visualNode.CoreNode.Values.Count)
+            {
+                visualNode.CoreNode.Values.RemoveAt(index);
+            }
+
+            // 2. Refresh Tree
              if(BPlusTreeTaskManager.Instance != null)
              {
                  BPlusTreeTaskManager.Instance.RefreshTree();
@@ -117,6 +138,73 @@ public class TaskDragManager : MonoBehaviour
                  // 3. Check ALL nodes for underflow AFTER refresh
                  StartCoroutine(ValidateAllNodesRoutine());
              }
+        }
+    }
+
+    public void CopyKeyToParent(BPlusTreeVisualNode node, int key)
+    {
+        if (node == null || node.CoreNode == null) 
+        {
+            return;
+        }
+
+        // Validate: Only allow Copy Up from Leaf Nodes
+        if (!node.CoreNode.IsLeaf)
+        {
+            Debug.LogWarning("Copy Up is only valid for Leaf Nodes in B+ Trees.");
+            return;
+        }
+
+        // Handle Case: No Parent (Root Node) -> Create New Root
+        if (node.CoreNode.Parent == null)
+        {
+            Debug.Log("Creating new Root for Copy Up operation.");
+            CreateNewRootFromChild(node.CoreNode);
+        }
+
+        var parentNode = node.CoreNode.Parent;
+        
+        // Check if key already exists in parent
+        if (parentNode.Keys.Contains(key))
+        {
+            Debug.Log($"Parent node already contains key {key}.");
+            return;
+        }
+
+        // Add key to parent
+        parentNode.Keys.Add(key);
+        parentNode.Keys.Sort();
+
+        Debug.Log($"Copied key {key} to parent node.");
+
+        // Refresh Visuals
+        if(BPlusTreeTaskManager.Instance != null)
+        {
+            BPlusTreeTaskManager.Instance.RefreshTree();
+            StartCoroutine(ValidateAllNodesRoutine());
+        }
+    }
+
+    private void CreateNewRootFromChild(BPlusTreeNode<int, string> child)
+    {
+        // 1. Create New Internal Node (Root)
+        var newRoot = new BPlusTreeNode<int, string>(false);
+        
+        // 2. Link Child to New Root
+        newRoot.Children.Add(child);
+        child.Parent = newRoot;
+        
+        // 3. Update Tree Reference
+        if (BPlusTreeTaskManager.Instance != null)
+        {
+            BPlusTreeTaskManager.Instance.UpdateTreeRoot(newRoot);
+        }
+
+        // Refresh Visuals
+        if(BPlusTreeTaskManager.Instance != null)
+        {
+            BPlusTreeTaskManager.Instance.RefreshTree();
+            StartCoroutine(ValidateAllNodesRoutine());
         }
     }
     
@@ -190,9 +278,9 @@ public class TaskDragManager : MonoBehaviour
         // 1. Remove from source
         sourceNode.CoreNode.Keys.Remove(keyVal);
         
-        // 2. Add to target
+        // 2. Add to the target
         targetNode.CoreNode.Keys.Add(keyVal);
-        targetNode.CoreNode.Keys.Sort(); // Keep sorted!
+        targetNode.CoreNode.Keys.Sort(); // Keep sorted
 
         // 3. Update Visuals
         if (BPlusTreeTaskManager.Instance != null)

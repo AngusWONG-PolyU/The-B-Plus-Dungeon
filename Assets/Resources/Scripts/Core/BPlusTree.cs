@@ -71,10 +71,10 @@ public class BPlusTree<TKey, TValue> where TKey : IComparable<TKey>
     public int Order { get; private set; }
 
     // Root node of the tree
-    public BPlusTreeNode<TKey, TValue> Root { get; private set; }
+    public BPlusTreeNode<TKey, TValue> Root { get; set; }
 
     // Reference to the first leaf node (for sequential access)
-    public BPlusTreeNode<TKey, TValue> FirstLeaf { get; private set; }
+    public BPlusTreeNode<TKey, TValue> FirstLeaf { get; set; }
 
     // Total number of key-value pairs in the tree
     public int Count { get; private set; }
