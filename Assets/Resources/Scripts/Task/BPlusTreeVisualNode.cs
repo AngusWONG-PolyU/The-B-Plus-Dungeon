@@ -2,9 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
-public class BPlusTreeVisualNode : MonoBehaviour
+public class BPlusTreeVisualNode : MonoBehaviour, IPointerClickHandler
 {
     [Header("References")]
     public Transform keyContainer;
@@ -16,6 +17,17 @@ public class BPlusTreeVisualNode : MonoBehaviour
     
     // Track highlight state for interactivity checks
     public bool IsHighlighted { get; private set; }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button == PointerEventData.InputButton.Right)
+        {
+            if (TaskContextMenu.Instance != null)
+            {
+                TaskContextMenu.Instance.ShowNodeMenu(this, eventData.position);
+            }
+        }
+    }
 
     public void Initialize(BPlusTreeNode<int, string> node)
     {
@@ -70,6 +82,16 @@ public class BPlusTreeVisualNode : MonoBehaviour
             le.minHeight = 50f;
             
             SpawnedKeys.Add(k);
+        }
+
+        if (CoreNode.Keys.Count == 0)
+        {
+            // Add a dummy spacer to the container so ContentSizeFitter sees "content"
+            GameObject spacer = new GameObject("EmptySpacer", typeof(RectTransform), typeof(LayoutElement));
+            spacer.transform.SetParent(keyContainer, false);
+            LayoutElement spacerLE = spacer.GetComponent<LayoutElement>();
+            spacerLE.minWidth = 80f;
+            spacerLE.minHeight = 80f; // Ensure node stays at least 80x80
         }
     }
 }

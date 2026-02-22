@@ -10,11 +10,13 @@ public class TaskContextMenu : MonoBehaviour
 
     [Header("UI References")]
     public GameObject menuPanel; // Assign the UI Panel
-    public Button deleteButton;
+    public Button deleteKeyButton;
+    public Button deleteNodeButton;
     public Button copyUpButton;
     public Button closeButton;
 
-    private TaskClickable _currentTarget; // The clickable object (Key) we opened menu for
+    private TaskClickable _currentTargetKey; 
+    private BPlusTreeVisualNode _currentTargetNode;
 
     private void Awake()
     {
@@ -24,35 +26,65 @@ public class TaskContextMenu : MonoBehaviour
         HideMenu();
         
         // Setup listeners
-        if (deleteButton) deleteButton.onClick.AddListener(OnDeleteClicked);
+        if (deleteKeyButton) deleteKeyButton.onClick.AddListener(OnDeleteKeyClicked);
+        if (deleteNodeButton) deleteNodeButton.onClick.AddListener(OnDeleteNodeClicked);
         if (copyUpButton) copyUpButton.onClick.AddListener(OnCopyUpClicked);
         if (closeButton) closeButton.onClick.AddListener(HideMenu);
+    }
+    
+    private void Update()
+    {
+        if (menuPanel != null && menuPanel.activeSelf)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                // Check if the click is outside the menu panel
+                RectTransform rect = menuPanel.GetComponent<RectTransform>();
+                if (rect != null)
+                {
+                    if (!RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition))
+                    {
+                        HideMenu();
+                    }
+                }
+            }
+        }
     }
 
     public void ShowMenu(TaskClickable target, Vector2 screenPos)
     {
-        _currentTarget = target;
+        _currentTargetKey = target;
+        _currentTargetNode = null;
         
         if (menuPanel != null)
         {
             menuPanel.SetActive(true);
-            menuPanel.transform.position = screenPos; // Place near mouse
+            menuPanel.transform.position = screenPos; 
         }
 
+        // Configure Buttons for Key Context
+        if (deleteKeyButton) 
+        {
+            deleteKeyButton.gameObject.SetActive(true);
+            deleteKeyButton.interactable = true;
+        }
+
+        if (deleteNodeButton) 
+        {
+            deleteNodeButton.gameObject.SetActive(false); // Hide Delete Node button in Key context
+        }
+        
         // Logic to enable/disable Copy Up based on context
         if (copyUpButton != null)
         {
+            copyUpButton.gameObject.SetActive(true); // Ensure it is visible
             try
             {
-                BPlusTreeVisualNode node = _currentTarget.GetParentVisualNode();
+                BPlusTreeVisualNode node = _currentTargetKey.GetParentVisualNode();
                 // Can only copy up if the current node is a Leaf Node
                 bool canCopyUp = (node != null && node.CoreNode != null && node.CoreNode.IsLeaf);
                                   
                 copyUpButton.interactable = canCopyUp;
-                
-                // Optional: visual feedback
-                var buttonImage = copyUpButton.GetComponent<Image>();
-                if(buttonImage) buttonImage.color = canCopyUp ? Color.white : Color.gray;
             }
             catch
             {
@@ -61,19 +93,52 @@ public class TaskContextMenu : MonoBehaviour
         }
     }
 
+    // New ShowMenu for Nodes (e.g. Empty Node)
+    public void ShowNodeMenu(BPlusTreeVisualNode node, Vector2 screenPos)
+    {
+        _currentTargetKey = null;
+        _currentTargetNode = node;
+
+        if (menuPanel != null)
+        {
+            menuPanel.SetActive(true);
+            menuPanel.transform.position = screenPos; 
+        }
+
+        // Configure Buttons for Node Context
+        if (deleteKeyButton) 
+        {
+            deleteKeyButton.gameObject.SetActive(false); // Hide Delete Key button in Node context
+        }
+
+        // Only allow Delete Node if the node is effectively empty (0 keys)
+        bool isNodeEmpty = (node != null && node.CoreNode != null && node.CoreNode.Keys.Count == 0);
+        if (deleteNodeButton) 
+        {
+            deleteNodeButton.gameObject.SetActive(true);
+            deleteNodeButton.interactable = isNodeEmpty;
+        }
+        
+        if (copyUpButton)
+        {
+            copyUpButton.gameObject.SetActive(false);
+        }
+    }
+
     public void HideMenu()
     {
         if (menuPanel != null) menuPanel.SetActive(false);
-        _currentTarget = null;
+        _currentTargetKey = null;
+        _currentTargetNode = null;
     }
 
-    private void OnDeleteClicked()
+    private void OnDeleteKeyClicked()
     {
-        if (_currentTarget != null)
+        if (_currentTargetKey != null)
         {
             // Call Manager to execute deletion
-            BPlusTreeVisualNode parentNode = _currentTarget.GetParentVisualNode();
-            int val = _currentTarget.GetValue();
+            BPlusTreeVisualNode parentNode = _currentTargetKey.GetParentVisualNode();
+            int val = _currentTargetKey.GetValue();
             
             if (TaskDragManager.Instance != null && parentNode != null)
             {
@@ -83,14 +148,27 @@ public class TaskContextMenu : MonoBehaviour
             HideMenu();
         }
     }
+    
+    private void OnDeleteNodeClicked()
+    {
+        // Handle deletion of the node itself
+        if (_currentTargetNode != null)
+        {
+            if (TaskDragManager.Instance != null)
+            {
+                TaskDragManager.Instance.DeleteNode(_currentTargetNode);
+            }
+            HideMenu();
+        }
+    }
 
     private void OnCopyUpClicked()
     {
-        if (_currentTarget != null)
+        if (_currentTargetKey != null)
         {
             // Call Manager to execute copy up
-            BPlusTreeVisualNode parentNode = _currentTarget.GetParentVisualNode();
-            int val = _currentTarget.GetValue();
+            BPlusTreeVisualNode parentNode = _currentTargetKey.GetParentVisualNode();
+            int val = _currentTargetKey.GetValue();
             
             if (TaskDragManager.Instance != null && parentNode != null)
             {
