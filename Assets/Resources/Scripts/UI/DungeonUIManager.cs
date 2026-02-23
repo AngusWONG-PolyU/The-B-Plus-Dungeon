@@ -2,12 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class DungeonUIManager : MonoBehaviour
 {
     [Header("HUD Elements")]
     public TextMeshProUGUI targetText;
     public GameObject minimapContainer; // Reference to the Minimap Container
+    public Toggle minimapToggle;
 
     public void SetTargetText(string text)
     {
@@ -27,5 +29,14 @@ public class DungeonUIManager : MonoBehaviour
     public void SetMinimapVisibility(bool visible)
     {
         if (minimapContainer != null) minimapContainer.SetActive(visible);
+    }
+
+    public void SetMinimapToggleVisibility(bool visible)
+    {
+        if (minimapToggle != null)
+        {
+            minimapToggle.SetIsOnWithoutNotify(true);
+            minimapToggle.gameObject.SetActive(visible);
+        }
     }
 }

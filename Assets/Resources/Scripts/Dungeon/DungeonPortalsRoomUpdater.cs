@@ -58,6 +58,7 @@ public class DungeonPortalsRoomUpdater : MonoBehaviour
         {
             dungeonUI.SetTargetVisibility(visible);
             dungeonUI.SetMinimapVisibility(visible);
+            dungeonUI.SetMinimapToggleVisibility(visible);
         }
     }
     

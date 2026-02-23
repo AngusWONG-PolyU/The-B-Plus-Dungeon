@@ -10,6 +10,7 @@ public class DungeonMinimap : MonoBehaviour
     public BPlusTree<int, int> dungeonTree; // Reference to the B+ Tree structure for dungeon navigation
     public Canvas minimapCanvas; // UI Canvas for the minimap
     public Transform minimapContainer; // Container for minimap nodes
+    public Toggle minimapToggle; // Toggle to show/hide the minimap
     
     [Header("Prefabs")]
     public GameObject nodeDisplayPrefab; // Prefab for displaying a node
@@ -79,6 +80,12 @@ public class DungeonMinimap : MonoBehaviour
             minimapContainer = transform;
         }
         
+        if (minimapToggle != null)
+        {
+            minimapToggle.onValueChanged.AddListener(OnMinimapToggleChanged);
+            minimapToggle.gameObject.SetActive(false);
+        }
+        
         // Ensure text is hidden at start
         if (fullMapMessageText != null)
         {
@@ -88,11 +95,36 @@ public class DungeonMinimap : MonoBehaviour
         RefreshMinimap();
     }
 
+    private void OnMinimapToggleChanged(bool isOn)
+    {
+        if (minimapContainer != null)
+        {
+            minimapContainer.gameObject.SetActive(isOn);
+        }
+        
+        if (backgroundObj != null)
+        {
+            backgroundObj.SetActive(isOn);
+        }
+        
+        if (fullMapMessageText != null)
+        {
+            fullMapMessageText.SetActive(isOn && gameObject.activeInHierarchy);
+        }
+        
+        if (isOn)
+        {
+            RefreshMinimap();
+        }
+    }
+
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.M))
         {
             isFullMapOpen = !isFullMapOpen;
+            minimapToggle.SetIsOnWithoutNotify(true);
+            minimapToggle.gameObject.SetActive(!isFullMapOpen);
             RefreshMinimap();
         }
 
@@ -106,6 +138,10 @@ public class DungeonMinimap : MonoBehaviour
         {
             // If the minimap content is active, the text should be active too
             bool shouldShow = minimapContainer.gameObject.activeInHierarchy && gameObject.activeInHierarchy;
+            if (minimapToggle != null && !minimapToggle.isOn)
+            {
+                shouldShow = false;
+            }
             if (fullMapMessageText.activeSelf != shouldShow)
             {
                 fullMapMessageText.SetActive(shouldShow);
@@ -222,6 +258,13 @@ public class DungeonMinimap : MonoBehaviour
         isAtLeaf = false;
         visitedNodes.Clear();
         if (currentNode != null) visitedNodes.Add(currentNode);
+        
+        if (minimapToggle != null)
+        {
+            minimapToggle.gameObject.SetActive(true);
+            minimapToggle.isOn = true;
+        }
+        
         RefreshMinimap();
     }
 
@@ -250,6 +293,10 @@ public class DungeonMinimap : MonoBehaviour
             // Only show text if the minimap container is active in hierarchy
             bool isMapVisible = (minimapContainer != null && minimapContainer.gameObject.activeInHierarchy);
             bool shouldShow = isMapVisible && gameObject.activeInHierarchy;
+            if (minimapToggle != null && !minimapToggle.isOn)
+            {
+                shouldShow = false;
+            }
             
             fullMapMessageText.SetActive(shouldShow);
             
@@ -620,6 +667,7 @@ public class DungeonMinimap : MonoBehaviour
     public void ClearMinimapPublic()
     {
         if (fullMapMessageText != null) fullMapMessageText.SetActive(false);
+        if (minimapToggle != null) minimapToggle.gameObject.SetActive(false);
         ClearMinimap();
         dungeonTree = null;
         currentNode = null;
@@ -665,6 +713,11 @@ public class DungeonMinimap : MonoBehaviour
         
         float rightEdge = (canvasSize.x / 2) - canvasPadding;
         float topEdge = (canvasSize.y / 2) - canvasPadding;
+        
+        if (minimapToggle != null)
+        {
+            topEdge -= 15f;
+        }
 
         float targetX = rightEdge - maxX * scale;
         float targetY = topEdge - maxY * scale;
@@ -738,6 +791,11 @@ public class DungeonMinimap : MonoBehaviour
         
         float rightEdge = (canvasSize.x / 2) - canvasPadding;
         float topEdge = (canvasSize.y / 2) - canvasPadding;
+        
+        if (minimapToggle != null)
+        {
+            topEdge -= 15f;
+        }
         
         RectTransform textRect = fullMapMessageText.GetComponent<RectTransform>();
         if (textRect != null)
