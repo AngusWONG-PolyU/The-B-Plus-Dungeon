@@ -518,7 +518,10 @@ public class BPlusTree<TKey, TValue> where TKey : IComparable<TKey>
         // Get the first key
         while (!node.IsLeaf)
         {
-            node = node.Children[0];
+            if (node.Children.Count > 0)
+                node = node.Children[0];
+            else
+                break;
         }
 
         // Return first key in the leaf

@@ -217,7 +217,12 @@ public class TaskDragManager : MonoBehaviour
         }
         
         BPlusTreeNode<int, string> parentNode = node.CoreNode.Parent;
-        if (parentNode.Keys.Contains(key)) return;
+        if (parentNode.Keys.Contains(key))
+        {
+            Debug.LogWarning("Key already exists in parent node.");
+            PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in parent node.", 2f, true);
+            return;
+        }
 
         parentNode.Keys.Add(key);
         parentNode.Keys.Sort();

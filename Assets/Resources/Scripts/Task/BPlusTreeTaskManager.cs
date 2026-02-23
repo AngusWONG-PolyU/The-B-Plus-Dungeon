@@ -275,6 +275,12 @@ public class BPlusTreeTaskManager : MonoBehaviour
         {
             int internalKey = node.Keys[i];
             
+            if (i + 1 >= node.Children.Count)
+            {
+                error = $"Internal Node has {node.Keys.Count} keys but only {node.Children.Count} children.";
+                return false;
+            }
+
             // Get the minimum key of the right child subtree
             int rightSubtreeMin = GetSubtreeMin(node.Children[i+1]);
 
@@ -302,7 +308,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
         }
         else
         {
-            return GetSubtreeMin(node.Children[0]);
+            return node.Children.Count > 0 ? GetSubtreeMin(node.Children[0]) : int.MaxValue;
         }
     }
 

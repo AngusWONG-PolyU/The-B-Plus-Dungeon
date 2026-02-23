@@ -95,13 +95,22 @@ public class BPlusTreeVisualizer : MonoBehaviour
             LayoutInternalNodes(child);
         }
 
-        // Now place myself based on the children
         RectTransform myRt = _nodeMap[node];
+        int depth = GetDepth(node);
+
+        if (node.Children.Count == 0)
+        {
+            // If an internal node has no children (e.g. due to merging), 
+            // just place it at X=0. CenterAndFitTree will handle the rest.
+            myRt.localPosition = new Vector3(0, -depth * levelHeight, 0);
+            return;
+        }
+
+        // Now place myself based on the children
         RectTransform firstChild = _nodeMap[node.Children[0]];
         RectTransform lastChild = _nodeMap[node.Children[node.Children.Count - 1]];
 
         float newX = (firstChild.localPosition.x + lastChild.localPosition.x) / 2f;
-        int depth = GetDepth(node);
 
         myRt.localPosition = new Vector3(newX, -depth * levelHeight, 0);
     }
