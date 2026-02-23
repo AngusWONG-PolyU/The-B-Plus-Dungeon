@@ -90,8 +90,8 @@ public class TaskDragManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning("Key already exists in parent node.");
-                    PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in parent node.", 2f, true);
+                    Debug.LogWarning("Key already exists in an internal node.");
+                    PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in an internal node.", 2f, true);
                     return false;
                 }
             }
@@ -224,6 +224,13 @@ public class TaskDragManager : MonoBehaviour
             return;
         }
 
+        if (IsKeyInAnyInternalNode(BPlusTreeTaskManager.Instance.CurrentTree.Root, key))
+        {
+            Debug.LogWarning("Key already exists in an internal node.");
+            PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in an internal node.", 2f, true);
+            return;
+        }
+
         parentNode.Keys.Add(key);
         parentNode.Keys.Sort();
         
@@ -238,8 +245,14 @@ public class TaskDragManager : MonoBehaviour
     // Used by Drag & Drop which has a target visual node
     private bool PerformCopyUp(BPlusTreeVisualNode targetInternalNode, int key)
     {
-        // Check duplicate
+        // Check duplicate in the target node
         if (targetInternalNode.CoreNode.Keys.Contains(key)) return false;
+
+        // Check duplicate in ALL internal nodes
+        if (IsKeyInAnyInternalNode(BPlusTreeTaskManager.Instance.CurrentTree.Root, key))
+        {
+            return false;
+        }
 
         // Add to internal node
         targetInternalNode.CoreNode.Keys.Add(key);
@@ -247,6 +260,20 @@ public class TaskDragManager : MonoBehaviour
         
         UpdateTreeVisuals();
         return true;
+    }
+
+    private bool IsKeyInAnyInternalNode(BPlusTreeNode<int, string> node, int key)
+    {
+        if (node == null || node.IsLeaf) return false;
+
+        if (node.Keys.Contains(key)) return true;
+
+        foreach (var child in node.Children)
+        {
+            if (IsKeyInAnyInternalNode(child, key)) return true;
+        }
+
+        return false;
     }
 
     // Move Key Logic
