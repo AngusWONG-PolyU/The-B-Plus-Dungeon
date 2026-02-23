@@ -461,8 +461,111 @@ public class TaskDragManager : MonoBehaviour
     {
         if (BPlusTreeTaskManager.Instance != null)
         {
+            AutoReparentChildren(BPlusTreeTaskManager.Instance.CurrentTree.Root);
             BPlusTreeTaskManager.Instance.RefreshTree();
             StartCoroutine(ValidateAllNodesRoutine());
+        }
+    }
+
+    private void AutoReparentChildren(BPlusTreeNode<int, string> root)
+    {
+        if (root == null || root.IsLeaf) return;
+
+        // 1. Collect all internal nodes and leaf nodes level by level
+        Dictionary<int, List<BPlusTreeNode<int, string>>> nodesByLevel = new Dictionary<int, List<BPlusTreeNode<int, string>>>();
+        CollectNodesByLevel(root, 0, nodesByLevel);
+
+        // 2. Process from bottom up (excluding leaves at the very bottom)
+        int maxDepth = 0;
+        foreach (var depth in nodesByLevel.Keys)
+        {
+            if (depth > maxDepth) maxDepth = depth;
+        }
+
+        for (int depth = maxDepth - 1; depth >= 0; depth--)
+        {
+            if (!nodesByLevel.ContainsKey(depth) || !nodesByLevel.ContainsKey(depth + 1)) continue;
+
+            List<BPlusTreeNode<int, string>> parents = nodesByLevel[depth];
+            List<BPlusTreeNode<int, string>> children = nodesByLevel[depth + 1];
+
+            if (parents.Count == 0 || children.Count == 0) continue;
+
+            // Sort parents and children by their first key (or subtree min)
+            parents.Sort((a, b) => GetNodeMinKey(a).CompareTo(GetNodeMinKey(b)));
+            children.Sort((a, b) => GetNodeMinKey(a).CompareTo(GetNodeMinKey(b)));
+
+            // Clear existing children links for these parents
+            foreach (var p in parents)
+            {
+                p.Children.Clear();
+            }
+
+            // Re-assign children to parents based on keys
+            int childIndex = 0;
+            for (int pIndex = 0; pIndex < parents.Count; pIndex++)
+            {
+                var parent = parents[pIndex];
+                
+                // A parent can have (Keys.Count + 1) children
+                int maxChildrenForThisParent = parent.Keys.Count + 1;
+                
+                // If it's the last parent, it takes all remaining children
+                if (pIndex == parents.Count - 1)
+                {
+                    while (childIndex < children.Count)
+                    {
+                        parent.Children.Add(children[childIndex]);
+                        children[childIndex].Parent = parent;
+                        childIndex++;
+                    }
+                }
+                else
+                {
+                    // Assign up to maxChildrenForThisParent
+                    int assigned = 0;
+                    while (childIndex < children.Count && assigned < maxChildrenForThisParent)
+                    {
+                        parent.Children.Add(children[childIndex]);
+                        children[childIndex].Parent = parent;
+                        childIndex++;
+                        assigned++;
+                    }
+                }
+            }
+        }
+    }
+
+    private void CollectNodesByLevel(BPlusTreeNode<int, string> node, int depth, Dictionary<int, List<BPlusTreeNode<int, string>>> dict)
+    {
+        if (node == null) return;
+
+        if (!dict.ContainsKey(depth))
+        {
+            dict[depth] = new List<BPlusTreeNode<int, string>>();
+        }
+        dict[depth].Add(node);
+
+        if (!node.IsLeaf && node.Children != null)
+        {
+            // Create a copy of children list to iterate safely since we might modify it later
+            var childrenCopy = new List<BPlusTreeNode<int, string>>(node.Children);
+            foreach (var child in childrenCopy)
+            {
+                CollectNodesByLevel(child, depth + 1, dict);
+            }
+        }
+    }
+
+    private int GetNodeMinKey(BPlusTreeNode<int, string> node)
+    {
+        if (node.IsLeaf)
+        {
+            return node.Keys.Count > 0 ? node.Keys[0] : int.MaxValue;
+        }
+        else
+        {
+            return node.Children.Count > 0 ? GetNodeMinKey(node.Children[0]) : int.MaxValue;
         }
     }
 
