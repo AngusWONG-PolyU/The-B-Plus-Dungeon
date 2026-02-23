@@ -81,6 +81,23 @@ public class BPlusTreeVisualNode : MonoBehaviour, IPointerClickHandler
             le.minWidth = 50f;
             le.minHeight = 50f;
             
+            // Highlight the key if it's the target key for deletion
+            if (BPlusTreeTaskManager.Instance != null && 
+                BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion && 
+                BPlusTreeTaskManager.Instance.TargetKey == key)
+            {
+                Image img = k.GetComponent<Image>();
+                if (img != null)
+                {
+                    img.color = new Color(1f, 0.5f, 0.5f, 1f); // Reddish highlight
+                }
+                
+                Outline outline = k.GetComponent<Outline>();
+                if (outline == null) outline = k.AddComponent<Outline>();
+                outline.effectColor = Color.red;
+                outline.effectDistance = new Vector2(3, -3);
+            }
+
             SpawnedKeys.Add(k);
         }
 
