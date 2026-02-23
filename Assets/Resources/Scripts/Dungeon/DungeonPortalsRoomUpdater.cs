@@ -283,6 +283,8 @@ public class DungeonPortalsRoomUpdater : MonoBehaviour
             // Wrong portal - turn red and lose heart
             portal.TurnRed();
             
+            PlayerInstructionUI.Instance?.ShowInstruction("Illusion Shattered! The portal drains your life force!\nHEART LOST!", 3f, true);
+            
             if (dungeonManager != null)
             {
                 dungeonManager.OnWrongPortal();

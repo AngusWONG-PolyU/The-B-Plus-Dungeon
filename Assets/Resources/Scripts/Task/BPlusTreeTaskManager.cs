@@ -25,6 +25,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
     public GameObject taskCanvas; 
     public GameObject bufferArea;
     public BPlusTreeVisualizer treeVisualizer;
+    public BPlusTreeVisualizer Visualizer => treeVisualizer;
     public TextMeshProUGUI taskTitleText; 
     public TextMeshProUGUI timerText;
     public TextMeshProUGUI treeOrderText;
@@ -309,6 +310,12 @@ public class BPlusTreeTaskManager : MonoBehaviour
         if (TaskContextMenu.Instance != null)
         {
             TaskContextMenu.Instance.HideMenu();
+        }
+        
+        // Hide any lingering instruction text
+        if (PlayerInstructionUI.Instance != null)
+        {
+            PlayerInstructionUI.Instance.HideInstruction();
         }
 
         if(_currentTrigger != null)

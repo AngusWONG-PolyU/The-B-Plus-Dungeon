@@ -106,7 +106,7 @@ public class BPlusTreeVisualizer : MonoBehaviour
         myRt.localPosition = new Vector3(newX, -depth * levelHeight, 0);
     }
     
-    private int GetDepth(BPlusTreeNode<int, string> node)
+    public int GetDepth(BPlusTreeNode<int, string> node)
     {
         int d = 0;
         while(node.Parent != null)

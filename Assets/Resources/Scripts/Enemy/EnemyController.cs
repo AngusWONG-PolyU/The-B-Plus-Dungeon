@@ -308,7 +308,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         string failMessage = forceFinishChant ? "Disruption Failed! Energy Surge Accelerated the Spell!\nBRACE FOR IMPACT!" : "Time's Up! Spell Cast Complete!\nBRACE FOR IMPACT!";
         if (PlayerInstructionUI.Instance != null)
         {
-            PlayerInstructionUI.Instance.ShowInstruction(failMessage, 3f);
+            PlayerInstructionUI.Instance.ShowInstruction(failMessage, 3f, true);
         }
 
         if (BPlusTreeTaskManager.Instance != null)

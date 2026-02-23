@@ -32,6 +32,7 @@ public class TaskNodeDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler,
         if (!IsDragAllowed()) 
         {
             Debug.Log("Drag restricted: In tutorial, you focus on fixing the highlighted error nodes.");
+            PlayerInstructionUI.Instance?.ShowInstruction("In tutorial, you focus on fixing the highlighted error nodes.", 2f, true);
             return;
         }
 
