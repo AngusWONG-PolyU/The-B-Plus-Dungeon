@@ -13,7 +13,7 @@ public class TaskContextMenu : MonoBehaviour
     public Button deleteKeyButton;
     public Button deleteNodeButton;
     public Button copyUpButton;
-    public Button splitButton;
+    public Button splitNodeButton;
     public Button closeButton;
 
     private TaskClickable _currentTargetKey; 
@@ -30,7 +30,7 @@ public class TaskContextMenu : MonoBehaviour
         if (deleteKeyButton) deleteKeyButton.onClick.AddListener(OnDeleteKeyClicked);
         if (deleteNodeButton) deleteNodeButton.onClick.AddListener(OnDeleteNodeClicked);
         if (copyUpButton) copyUpButton.onClick.AddListener(OnCopyUpClicked);
-        if (splitButton) splitButton.onClick.AddListener(OnSplitClicked);
+        if (splitNodeButton) splitNodeButton.onClick.AddListener(OnSplitClicked);
         if (closeButton) closeButton.onClick.AddListener(HideMenu);
     }
     
@@ -93,10 +93,10 @@ public class TaskContextMenu : MonoBehaviour
             deleteNodeButton.gameObject.SetActive(false); // Hide Delete Node button in Key context
         }
         
-        if (splitButton)
+        if (splitNodeButton)
         {
-            splitButton.gameObject.SetActive(true);
-            splitButton.interactable = true;
+            splitNodeButton.gameObject.SetActive(true);
+            splitNodeButton.interactable = true;
         }
         
         // Logic to enable/disable Copy Up based on context
@@ -149,9 +149,9 @@ public class TaskContextMenu : MonoBehaviour
             copyUpButton.gameObject.SetActive(false);
         }
         
-        if (splitButton)
+        if (splitNodeButton)
         {
-            splitButton.gameObject.SetActive(false);
+            splitNodeButton.gameObject.SetActive(false);
         }
     }
 
