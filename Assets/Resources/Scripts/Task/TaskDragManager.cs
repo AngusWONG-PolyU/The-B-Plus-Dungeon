@@ -165,10 +165,11 @@ public class TaskDragManager : MonoBehaviour
             BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion)
         {
             // Only enforce strict target check on Leaf Nodes
-            if (visualNode.CoreNode.IsLeaf && key != BPlusTreeTaskManager.Instance.TargetKey)
+            if (visualNode.CoreNode.IsLeaf && !BPlusTreeTaskManager.Instance.TargetKeys.Contains(key))
             {
-                Debug.LogWarning($"Deletion Task: Can only delete target key {BPlusTreeTaskManager.Instance.TargetKey} from leaf.");
-                PlayerInstructionUI.Instance?.ShowInstruction($"Can only delete target key {BPlusTreeTaskManager.Instance.TargetKey} from leaf.", 2f, true);
+                string keysStr = string.Join(", ", BPlusTreeTaskManager.Instance.TargetKeys);
+                Debug.LogWarning($"Deletion Task: Can only delete target key(s) {keysStr} from leaf.");
+                PlayerInstructionUI.Instance?.ShowInstruction($"Can only delete target key(s) {keysStr} from leaf.", 2f, true);
                 return;
             }
         }

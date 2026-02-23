@@ -77,7 +77,7 @@ public class TaskContextMenu : MonoBehaviour
                 bool isLeaf = (parentNode != null && parentNode.CoreNode != null && parentNode.CoreNode.IsLeaf);
                 
                 // Restriction applies effectively only to Leaf nodes
-                if (isLeaf && val != BPlusTreeTaskManager.Instance.TargetKey)
+                if (isLeaf && !BPlusTreeTaskManager.Instance.TargetKeys.Contains(val))
                 {
                     canDelete = false;
                 }

@@ -44,8 +44,8 @@ public class BPlusTreeTaskManager : MonoBehaviour
     public BPlusTreeTaskType CurrentTaskType => _currentTaskType;
     
     // Fields for validation
-    private int _targetKey;
-    public int TargetKey => _targetKey;
+    private List<int> _targetKeys = new List<int>();
+    public List<int> TargetKeys => _targetKeys;
     private HashSet<int> _initialKeys;
 
     // Expose method to update root (for manual manipulation like CopyUp triggering root split)
@@ -147,26 +147,45 @@ public class BPlusTreeTaskManager : MonoBehaviour
             }
         }
 
-        // 4. Determine Target Key based on Initial State
+        // 4. Determine Target Key(s) based on Initial State
+        _targetKeys.Clear();
+        
+        int numTargets = 1;
+        if (dungeonGen != null)
+        {
+            if (dungeonGen.difficultyMode == DungeonGenerator.DifficultyMode.Standard) numTargets = 2;
+            else if (dungeonGen.difficultyMode == DungeonGenerator.DifficultyMode.Hard) numTargets = 3;
+        }
+
         if (type == BPlusTreeTaskType.Deletion)
         {
-            // Pick an existing key to delete
+            // Pick existing keys to delete
             List<int> existingKeys = new List<int>(_initialKeys);
-            _targetKey = existingKeys[Random.Range(0, existingKeys.Count)];
+            for (int i = 0; i < numTargets && existingKeys.Count > 0; i++)
+            {
+                int idx = Random.Range(0, existingKeys.Count);
+                _targetKeys.Add(existingKeys[idx]);
+                existingKeys.RemoveAt(idx);
+            }
             
-            if(taskTitleText) taskTitleText.text = $"Delete Key <color=#FFD700>{_targetKey}</color> to Break the Spell!";
+            string keysStr = string.Join(", ", _targetKeys);
+            if(taskTitleText) taskTitleText.text = $"Delete Key(s) <color=#FFD700>{keysStr}</color> to Break the Spell!";
         }
         else // Insertion
         {
-            // Pick a NEW key to insert
-            int candidate = Random.Range(1, 100);
-            while(_initialKeys.Contains(candidate))
+            // Pick NEW keys to insert
+            for (int i = 0; i < numTargets; i++)
             {
-                candidate = Random.Range(1, 100);
+                int candidate = Random.Range(1, 100);
+                while(_initialKeys.Contains(candidate) || _targetKeys.Contains(candidate))
+                {
+                    candidate = Random.Range(1, 100);
+                }
+                _targetKeys.Add(candidate);
             }
-            _targetKey = candidate;
             
-            if(taskTitleText) taskTitleText.text = $"Insert Key <color=#FFD700>{_targetKey}</color> to Unlock the Door!";
+            string keysStr = string.Join(", ", _targetKeys);
+            if(taskTitleText) taskTitleText.text = $"Insert Key(s) <color=#FFD700>{keysStr}</color> to Unlock the Door!";
         }
 
         // 5. Visualize it
@@ -196,11 +215,17 @@ public class BPlusTreeTaskManager : MonoBehaviour
 
         if (_currentTaskType == BPlusTreeTaskType.Insertion)
         {
-            expectedKeys.Add(_targetKey);
+            foreach (int key in _targetKeys)
+            {
+                expectedKeys.Add(key);
+            }
         }
         else if (_currentTaskType == BPlusTreeTaskType.Deletion)
         {
-            expectedKeys.Remove(_targetKey);
+            foreach (int key in _targetKeys)
+            {
+                expectedKeys.Remove(key);
+            }
         }
 
         // 2. Collect Actual Keys from the Tree
@@ -312,12 +337,6 @@ public class BPlusTreeTaskManager : MonoBehaviour
             TaskContextMenu.Instance.HideMenu();
         }
         
-        // Hide any lingering instruction text
-        if (PlayerInstructionUI.Instance != null)
-        {
-            PlayerInstructionUI.Instance.HideInstruction();
-        }
-
         if(_currentTrigger != null)
         {
             _currentTrigger.OnTaskComplete(success);

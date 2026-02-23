@@ -296,13 +296,11 @@ public class DungeonGenerator : MonoBehaviour
         switch (difficultyMode)
         {
             case DifficultyMode.Tutorial:
-                return 1.6f; // Slower
+                return 1.5f; // Slower for Tutorial
             case DifficultyMode.Easy:
-                return 1.2f; // Slightly Slower
             case DifficultyMode.Standard:
-                return 1.0f; // Normal
             case DifficultyMode.Hard:
-                return 0.5f; // Faster (Half time)
+                return 1.0f; // Normal time for all standard modes
             default:
                 return 1.0f;
         }

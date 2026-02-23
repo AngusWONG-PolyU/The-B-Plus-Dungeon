@@ -84,7 +84,7 @@ public class BPlusTreeVisualNode : MonoBehaviour, IPointerClickHandler
             // Highlight the key if it's the target key for deletion
             if (BPlusTreeTaskManager.Instance != null && 
                 BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion && 
-                BPlusTreeTaskManager.Instance.TargetKey == key)
+                BPlusTreeTaskManager.Instance.TargetKeys.Contains(key))
             {
                 Image img = k.GetComponent<Image>();
                 if (img != null)
