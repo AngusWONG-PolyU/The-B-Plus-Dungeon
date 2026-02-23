@@ -13,6 +13,7 @@ public class TaskContextMenu : MonoBehaviour
     public Button deleteKeyButton;
     public Button deleteNodeButton;
     public Button copyUpButton;
+    public Button splitButton;
     public Button closeButton;
 
     private TaskClickable _currentTargetKey; 
@@ -29,6 +30,7 @@ public class TaskContextMenu : MonoBehaviour
         if (deleteKeyButton) deleteKeyButton.onClick.AddListener(OnDeleteKeyClicked);
         if (deleteNodeButton) deleteNodeButton.onClick.AddListener(OnDeleteNodeClicked);
         if (copyUpButton) copyUpButton.onClick.AddListener(OnCopyUpClicked);
+        if (splitButton) splitButton.onClick.AddListener(OnSplitClicked);
         if (closeButton) closeButton.onClick.AddListener(HideMenu);
     }
     
@@ -91,6 +93,12 @@ public class TaskContextMenu : MonoBehaviour
             deleteNodeButton.gameObject.SetActive(false); // Hide Delete Node button in Key context
         }
         
+        if (splitButton)
+        {
+            splitButton.gameObject.SetActive(true);
+            splitButton.interactable = true;
+        }
+        
         // Logic to enable/disable Copy Up based on context
         if (copyUpButton != null)
         {
@@ -139,6 +147,11 @@ public class TaskContextMenu : MonoBehaviour
         if (copyUpButton)
         {
             copyUpButton.gameObject.SetActive(false);
+        }
+        
+        if (splitButton)
+        {
+            splitButton.gameObject.SetActive(false);
         }
     }
 
@@ -190,6 +203,22 @@ public class TaskContextMenu : MonoBehaviour
             if (TaskDragManager.Instance != null && parentNode != null)
             {
                 TaskDragManager.Instance.CopyKeyToParent(parentNode, val);
+            }
+            
+            HideMenu();
+        }
+    }
+
+    private void OnSplitClicked()
+    {
+        if (_currentTargetKey != null)
+        {
+            BPlusTreeVisualNode parentNode = _currentTargetKey.GetParentVisualNode();
+            int val = _currentTargetKey.GetValue();
+            
+            if (TaskDragManager.Instance != null && parentNode != null)
+            {
+                TaskDragManager.Instance.SplitNode(parentNode, val);
             }
             
             HideMenu();

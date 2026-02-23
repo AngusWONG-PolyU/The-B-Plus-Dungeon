@@ -237,6 +237,96 @@ public class TaskDragManager : MonoBehaviour
         UpdateTreeVisuals();
     }
 
+    public void SplitNode(BPlusTreeVisualNode node, int splitKey)
+    {
+        if (node == null || node.CoreNode == null) return;
+
+        var coreNode = node.CoreNode;
+        int splitIndex = coreNode.Keys.IndexOf(splitKey);
+
+        if (splitIndex == -1)
+        {
+            Debug.LogWarning("Split key not found in node.");
+            return;
+        }
+
+        // Create new right node
+        var newRightNode = new BPlusTreeNode<int, string>(coreNode.IsLeaf);
+
+        // Move keys and values/children to the new right node
+        newRightNode.Keys.AddRange(coreNode.Keys.GetRange(splitIndex, coreNode.Keys.Count - splitIndex));
+        coreNode.Keys.RemoveRange(splitIndex, coreNode.Keys.Count - splitIndex);
+
+        if (coreNode.IsLeaf)
+        {
+            if (coreNode.Values != null)
+            {
+                int valCount = coreNode.Values.Count;
+                if (splitIndex < valCount)
+                {
+                    newRightNode.Values.AddRange(coreNode.Values.GetRange(splitIndex, valCount - splitIndex));
+                    coreNode.Values.RemoveRange(splitIndex, valCount - splitIndex);
+                }
+            }
+
+            // Update linked list pointers
+            newRightNode.Next = coreNode.Next;
+            coreNode.Next = newRightNode;
+        }
+        else
+        {
+            if (coreNode.Children != null)
+            {
+                int childrenSplitIndex = splitIndex + 1;
+                if (childrenSplitIndex <= coreNode.Children.Count)
+                {
+                    newRightNode.Children.AddRange(coreNode.Children.GetRange(childrenSplitIndex, coreNode.Children.Count - childrenSplitIndex));
+                    coreNode.Children.RemoveRange(childrenSplitIndex, coreNode.Children.Count - childrenSplitIndex);
+
+                    // Update parent pointers for moved children
+                    foreach (var child in newRightNode.Children)
+                    {
+                        child.Parent = newRightNode;
+                    }
+                }
+            }
+        }
+
+        // Handle parent
+        if (coreNode.Parent == null)
+        {
+            // Create a new root
+            var newRoot = new BPlusTreeNode<int, string>(false);
+            newRoot.Children.Add(coreNode);
+            newRoot.Children.Add(newRightNode);
+            coreNode.Parent = newRoot;
+            newRightNode.Parent = newRoot;
+
+            if (BPlusTreeTaskManager.Instance != null)
+            {
+                BPlusTreeTaskManager.Instance.UpdateTreeRoot(newRoot);
+            }
+        }
+        else
+        {
+            // Add new right node to existing parent
+            var parent = coreNode.Parent;
+            int childIndex = parent.Children.IndexOf(coreNode);
+            if (childIndex != -1)
+            {
+                parent.Children.Insert(childIndex + 1, newRightNode);
+                newRightNode.Parent = parent;
+            }
+            else
+            {
+                parent.Children.Add(newRightNode);
+                newRightNode.Parent = parent;
+            }
+        }
+
+        UpdateTreeVisuals();
+    }
+
     #endregion
 
     #region Operation Helpers
