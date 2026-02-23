@@ -56,7 +56,6 @@ public class TaskDragManager : MonoBehaviour
 
     #region Drop Logic (Key & Node)
 
-    // TODO: Restrict from leaf to any internal node except its parent node
     // Main Entry Point for Key Drops
     public bool HandleKeyDrop(TaskDraggable draggable, BPlusTreeVisualNode targetNode)
     {
@@ -78,15 +77,41 @@ public class TaskDragManager : MonoBehaviour
 
         // 3. COPY UP: Leaf -> Parent
         // Standard behavior: Copy up only happens when promoting a key to the immediate parent
-        if (sourceNode.CoreNode.IsLeaf && sourceNode.CoreNode.Parent == targetNode.CoreNode)
+        if (sourceNode.CoreNode.IsLeaf && !targetNode.CoreNode.IsLeaf)
         {
-            Debug.Log("Operation: Copy Up (Leaf -> Parent)");
-            PerformCopyUp(targetNode, keyVal);
-            Destroy(draggable.gameObject); 
-            return true; 
+            if (sourceNode.CoreNode.Parent == targetNode.CoreNode)
+            {
+                Debug.Log("Operation: Copy Up (Leaf -> Parent)");
+                bool success = PerformCopyUp(targetNode, keyVal);
+                if (success)
+                {
+                    Destroy(draggable.gameObject); 
+                    return true; 
+                }
+                else
+                {
+                    Debug.LogWarning("Key already exists in parent node.");
+                    PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in parent node.", 2f, true);
+                    return false;
+                }
+            }
+            else
+            {
+                Debug.LogWarning("Cannot move or copy key from leaf to non-parent internal node.");
+                PlayerInstructionUI.Instance?.ShowInstruction("Cannot move key from leaf to non-parent internal node.", 2f, true);
+                return false;
+            }
         }
 
         // 4. MOVE: Node -> Node (Leaf->Leaf or Internal->Internal)
+        // Prevent moving between different types (Leaf <-> Internal)
+        if (sourceNode.CoreNode.IsLeaf != targetNode.CoreNode.IsLeaf)
+        {
+            Debug.LogWarning($"Cannot move key between different node types. Source is Leaf: {sourceNode.CoreNode.IsLeaf}, Target is Leaf: {targetNode.CoreNode.IsLeaf}");
+            PlayerInstructionUI.Instance?.ShowInstruction("Cannot move key between different node types.", 2f, true);
+            return false;
+        }
+
         Debug.Log("Operation: Move Key (Borrow/Redistribute)");
         PerformMoveKey(sourceNode, targetNode, keyVal);
         
@@ -99,6 +124,17 @@ public class TaskDragManager : MonoBehaviour
     {
         if (_dragedNode == null || targetNode == null || _dragedNode == targetNode) return false;
         
+        // Level restriction check
+        int draggedDepth = BPlusTreeTaskManager.Instance.Visualizer.GetDepth(_dragedNode.CoreNode);
+        int targetDepth = BPlusTreeTaskManager.Instance.Visualizer.GetDepth(targetNode.CoreNode);
+        
+        if (draggedDepth != targetDepth || _dragedNode.CoreNode.IsLeaf != targetNode.CoreNode.IsLeaf)
+        {
+            Debug.LogWarning($"Cannot merge nodes at different levels or types. Dragged depth: {draggedDepth}, Target depth: {targetDepth}");
+            PlayerInstructionUI.Instance?.ShowInstruction("Cannot merge nodes at different levels or types.", 2f, true);
+            return false;
+        }
+
         Debug.Log($"Handling Node Drop: Merge {_dragedNode.name} into {targetNode.name}");
 
         // 1. Merge Data
@@ -132,6 +168,7 @@ public class TaskDragManager : MonoBehaviour
             if (visualNode.CoreNode.IsLeaf && key != BPlusTreeTaskManager.Instance.TargetKey)
             {
                 Debug.LogWarning($"Deletion Task: Can only delete target key {BPlusTreeTaskManager.Instance.TargetKey} from leaf.");
+                PlayerInstructionUI.Instance?.ShowInstruction($"Can only delete target key {BPlusTreeTaskManager.Instance.TargetKey} from leaf.", 2f, true);
                 return;
             }
         }
@@ -149,6 +186,7 @@ public class TaskDragManager : MonoBehaviour
         if (visualNode.CoreNode == BPlusTreeTaskManager.Instance.CurrentTree.Root)
         {
             Debug.LogWarning("Cannot delete root node directly.");
+            PlayerInstructionUI.Instance?.ShowInstruction("Cannot delete root node directly.", 2f, true);
             return;
         }
 
@@ -166,6 +204,7 @@ public class TaskDragManager : MonoBehaviour
         if (!node.CoreNode.IsLeaf)
         {
             Debug.LogWarning("Copy Up is only valid for Leaf Nodes.");
+            PlayerInstructionUI.Instance?.ShowInstruction("Copy Up is only valid for Leaf Nodes.", 2f, true);
             return;
         }
 
@@ -191,16 +230,17 @@ public class TaskDragManager : MonoBehaviour
     
     // Copy Up Logic
     // Used by Drag & Drop which has a target visual node
-    private void PerformCopyUp(BPlusTreeVisualNode targetInternalNode, int key)
+    private bool PerformCopyUp(BPlusTreeVisualNode targetInternalNode, int key)
     {
         // Check duplicate
-        if (targetInternalNode.CoreNode.Keys.Contains(key)) return;
+        if (targetInternalNode.CoreNode.Keys.Contains(key)) return false;
 
         // Add to internal node
         targetInternalNode.CoreNode.Keys.Add(key);
         targetInternalNode.CoreNode.Keys.Sort();
         
         UpdateTreeVisuals();
+        return true;
     }
 
     // Move Key Logic
