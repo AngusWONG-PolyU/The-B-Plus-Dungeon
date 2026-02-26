@@ -12,6 +12,10 @@ public class TaskDragManager : MonoBehaviour
     public float thresholdDistance = 50f;
     public bool isDragging = false;
     
+    [Header("UI Settings")]
+    public float errorInstructionTime = 2.5f;
+    public float infoInstructionTime = 2.0f;
+    
     // Key Dragging
     private TaskDraggable _currentItem;
     public bool IsKeyDragging => isDragging;
@@ -91,14 +95,14 @@ public class TaskDragManager : MonoBehaviour
                 else
                 {
                     Debug.LogWarning("Key already exists in an internal node.");
-                    PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in an internal node.", 2f, true);
+                    PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in an internal node.", errorInstructionTime, true);
                     return false;
                 }
             }
             else
             {
                 Debug.LogWarning("Cannot move or copy key from leaf to non-parent internal node.");
-                PlayerInstructionUI.Instance?.ShowInstruction("Cannot move key from leaf to non-parent internal node.", 2f, true);
+                PlayerInstructionUI.Instance?.ShowInstruction("Cannot move key from leaf to non-parent internal node.", errorInstructionTime, true);
                 return false;
             }
         }
@@ -108,7 +112,68 @@ public class TaskDragManager : MonoBehaviour
         if (sourceNode.CoreNode.IsLeaf != targetNode.CoreNode.IsLeaf)
         {
             Debug.LogWarning($"Cannot move key between different node types. Source is Leaf: {sourceNode.CoreNode.IsLeaf}, Target is Leaf: {targetNode.CoreNode.IsLeaf}");
-            PlayerInstructionUI.Instance?.ShowInstruction("Cannot move key between different node types.", 2f, true);
+            PlayerInstructionUI.Instance?.ShowInstruction("Cannot move key between different node types.", errorInstructionTime, true);
+            return false;
+        }
+
+        // Handle Internal Node Promotion (Push Up) vs Demotion (Push Down) vs Borrowing
+        if (!sourceNode.CoreNode.IsLeaf && !targetNode.CoreNode.IsLeaf)
+        {
+            // Check if it's a Promotion (Push Up) to Parent
+            if (sourceNode.CoreNode.Parent == targetNode.CoreNode)
+            {
+                // Capacity Check for Promotion
+                int order = BPlusTreeTaskManager.Instance.treeOrder;
+                int maxKeys = order - 1;
+                if (targetNode.CoreNode.Keys.Count >= maxKeys)
+                {
+                    Debug.LogWarning($"Cannot promote: Parent node is already full (Max {maxKeys} keys).");
+                    PlayerInstructionUI.Instance?.ShowInstruction($"Cannot promote key: Parent is full (Max {maxKeys}).", errorInstructionTime, true);
+                    return false;
+                }
+
+                Debug.Log("Operation: Push Up / Promote (Internal -> Parent)");
+                PerformMoveKey(sourceNode, targetNode, keyVal);
+                Destroy(draggable.gameObject);
+                return true;
+            }
+            
+            // Check if it's a Demotion (Push Down) to Child
+            if (targetNode.CoreNode.Parent == sourceNode.CoreNode)
+            {
+                // Capacity Check for Demotion
+                int order = BPlusTreeTaskManager.Instance.treeOrder;
+                int maxKeys = order - 1;
+                if (targetNode.CoreNode.Keys.Count >= maxKeys)
+                {
+                    Debug.LogWarning($"Cannot demote: Child node is already full (Max {maxKeys} keys).");
+                    PlayerInstructionUI.Instance?.ShowInstruction($"Cannot demote key: Child is full (Max {maxKeys}).", errorInstructionTime, true);
+                    return false;
+                }
+
+                Debug.Log("Operation: Push Down / Demote (Parent -> Internal Child)");
+                PerformMoveKey(sourceNode, targetNode, keyVal);
+                Destroy(draggable.gameObject);
+                return true;
+            }
+        }
+
+        // If it's not a promotion, it must be a Borrow/Redistribute operation
+        // Sibling Restriction Check for Borrowing
+        if (!AreNodesAdjacent(sourceNode.CoreNode, targetNode.CoreNode))
+        {
+            Debug.LogWarning("Cannot borrow/move keys between non-adjacent nodes.");
+            PlayerInstructionUI.Instance?.ShowInstruction("Can only borrow keys from adjacent nodes (left or right).", errorInstructionTime, true);
+            return false;
+        }
+
+        // Capacity Restriction Check for Borrowing
+        int orderForBorrow = BPlusTreeTaskManager.Instance.treeOrder;
+        int maxKeysForBorrow = orderForBorrow - 1;
+        if (targetNode.CoreNode.Keys.Count >= maxKeysForBorrow)
+        {
+            Debug.LogWarning($"Cannot borrow: Target node is already full (Max {maxKeysForBorrow} keys).");
+            PlayerInstructionUI.Instance?.ShowInstruction($"Cannot move key: Target node is full (Max {maxKeysForBorrow}).", errorInstructionTime, true);
             return false;
         }
 
@@ -132,6 +197,26 @@ public class TaskDragManager : MonoBehaviour
         {
             Debug.LogWarning($"Cannot merge nodes at different levels or types. Dragged depth: {draggedDepth}, Target depth: {targetDepth}");
             PlayerInstructionUI.Instance?.ShowInstruction("Cannot merge nodes at different levels or types.", 2f, true);
+            return false;
+        }
+
+        // Sibling Restriction Check
+        if (!AreNodesAdjacent(_dragedNode.CoreNode, targetNode.CoreNode))
+        {
+            Debug.LogWarning("Cannot merge: Nodes must be adjacent (left or right).");
+            PlayerInstructionUI.Instance?.ShowInstruction("Cannot merge: Nodes must be adjacent.", errorInstructionTime, true);
+            return false;
+        }
+
+        // Capacity Restriction Check
+        int order = BPlusTreeTaskManager.Instance.treeOrder;
+        int maxKeys = order - 1; 
+        // Note: For internal nodes, strict B+ tree merging logic is more complex (involving parent key), 
+        // but for this game's visual drag-drop, simpler count check is usually sufficient for feedback.
+        if (_dragedNode.CoreNode.Keys.Count + targetNode.CoreNode.Keys.Count > maxKeys)
+        {
+            Debug.LogWarning($"Cannot merge: Combined keys exceed maximum capacity of {maxKeys}.");
+            PlayerInstructionUI.Instance?.ShowInstruction($"Cannot merge: Combined keys exceed max capacity ({maxKeys}).", errorInstructionTime, true);
             return false;
         }
 
@@ -169,7 +254,7 @@ public class TaskDragManager : MonoBehaviour
             {
                 string keysStr = string.Join(", ", BPlusTreeTaskManager.Instance.TargetKeys);
                 Debug.LogWarning($"Deletion Task: Can only delete target key(s) {keysStr} from leaf.");
-                PlayerInstructionUI.Instance?.ShowInstruction($"Can only delete target key(s) {keysStr} from leaf.", 2f, true);
+                PlayerInstructionUI.Instance?.ShowInstruction($"Can only delete target key(s) {keysStr} from leaf.", errorInstructionTime, true);
                 return;
             }
         }
@@ -187,7 +272,15 @@ public class TaskDragManager : MonoBehaviour
         if (visualNode.CoreNode == BPlusTreeTaskManager.Instance.CurrentTree.Root)
         {
             Debug.LogWarning("Cannot delete root node directly.");
-            PlayerInstructionUI.Instance?.ShowInstruction("Cannot delete root node directly.", 2f, true);
+            PlayerInstructionUI.Instance?.ShowInstruction("Cannot delete root node directly.", errorInstructionTime, true);
+            return;
+        }
+
+        // Internal Node Protection
+        if (!visualNode.CoreNode.IsLeaf && visualNode.CoreNode.Children.Count > 0)
+        {
+            Debug.LogWarning("Cannot delete internal node with children.");
+            PlayerInstructionUI.Instance?.ShowInstruction("Cannot delete internal node with children.", errorInstructionTime, true);
             return;
         }
 
@@ -205,7 +298,7 @@ public class TaskDragManager : MonoBehaviour
         if (!node.CoreNode.IsLeaf)
         {
             Debug.LogWarning("Copy Up is only valid for Leaf Nodes.");
-            PlayerInstructionUI.Instance?.ShowInstruction("Copy Up is only valid for Leaf Nodes.", 2f, true);
+            PlayerInstructionUI.Instance?.ShowInstruction("Copy Up is only valid for Leaf Nodes.", errorInstructionTime, true);
             return;
         }
 
@@ -220,14 +313,14 @@ public class TaskDragManager : MonoBehaviour
         if (parentNode.Keys.Contains(key))
         {
             Debug.LogWarning("Key already exists in parent node.");
-            PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in parent node.", 2f, true);
+            PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in parent node.", errorInstructionTime, true);
             return;
         }
 
         if (IsKeyInAnyInternalNode(BPlusTreeTaskManager.Instance.CurrentTree.Root, key))
         {
             Debug.LogWarning("Key already exists in an internal node.");
-            PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in an internal node.", 2f, true);
+            PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in an internal node.", errorInstructionTime, true);
             return;
         }
 
@@ -241,12 +334,29 @@ public class TaskDragManager : MonoBehaviour
     {
         if (node == null || node.CoreNode == null) return;
 
+        // Restriction: Only split when node is full
+        int order = BPlusTreeTaskManager.Instance.treeOrder;
+        if (node.CoreNode.Keys.Count < order)
+        {
+            Debug.LogWarning("Node is not full enough to split.");
+            PlayerInstructionUI.Instance?.ShowInstruction($"Node is not full enough to split (Must have at least {order} keys).", errorInstructionTime, true);
+            return;
+        }
+
         var coreNode = node.CoreNode;
         int splitIndex = coreNode.Keys.IndexOf(splitKey);
 
         if (splitIndex == -1)
         {
             Debug.LogWarning("Split key not found in node.");
+            return;
+        }
+
+        // Restriction: Prevent splitting at the very edges which creates empty nodes
+        if (splitIndex == 0 || splitIndex == coreNode.Keys.Count)
+        {
+            Debug.LogWarning("Cannot split at the edge. It would create an empty node.");
+            PlayerInstructionUI.Instance?.ShowInstruction("Cannot split at the edge. Please select a middle key.", errorInstructionTime, true);
             return;
         }
 
@@ -331,6 +441,43 @@ public class TaskDragManager : MonoBehaviour
 
     #region Operation Helpers
     
+    private bool AreNodesAdjacent(BPlusTreeNode<int, string> nodeA, BPlusTreeNode<int, string> nodeB)
+    {
+        if (nodeA == null || nodeB == null) return false;
+
+        // If they are leaves, we can use the linked list property
+        if (nodeA.IsLeaf && nodeB.IsLeaf)
+        {
+            return nodeA.Next == nodeB || nodeB.Next == nodeA;
+        }
+
+        // If they are internal nodes, we need to check if they are adjacent in the level order
+        // The easiest way is to collect all nodes at that depth and check their indices
+        int depthA = BPlusTreeTaskManager.Instance.Visualizer.GetDepth(nodeA);
+        int depthB = BPlusTreeTaskManager.Instance.Visualizer.GetDepth(nodeB);
+        
+        if (depthA != depthB) return false;
+
+        Dictionary<int, List<BPlusTreeNode<int, string>>> nodesByLevel = new Dictionary<int, List<BPlusTreeNode<int, string>>>();
+        CollectNodesByLevel(BPlusTreeTaskManager.Instance.CurrentTree.Root, 0, nodesByLevel);
+
+        if (nodesByLevel.TryGetValue(depthA, out List<BPlusTreeNode<int, string>> levelNodes))
+        {
+            // Ensure they are sorted by their first key to represent physical left-to-right order
+            levelNodes.Sort((a, b) => GetNodeMinKey(a).CompareTo(GetNodeMinKey(b)));
+            
+            int indexA = levelNodes.IndexOf(nodeA);
+            int indexB = levelNodes.IndexOf(nodeB);
+
+            if (indexA != -1 && indexB != -1)
+            {
+                return Mathf.Abs(indexA - indexB) == 1;
+            }
+        }
+
+        return false;
+    }
+
     // Copy Up Logic
     // Used by Drag & Drop which has a target visual node
     private bool PerformCopyUp(BPlusTreeVisualNode targetInternalNode, int key)

@@ -15,7 +15,7 @@ public class BPlusTreeVisualizer : MonoBehaviour
     [Header("Layout Settings")]
     public float levelHeight = 180f; // Vertical distance
     public float nodeDataWidth = 60f; // Approximate width per key
-    public float nodePadding = 40f;   // Gap between nodes
+    public float nodePadding = 40f; // Gap between nodes
 
     private Dictionary<BPlusTreeNode<int, string>, RectTransform> _nodeMap;
 
@@ -61,12 +61,18 @@ public class BPlusTreeVisualizer : MonoBehaviour
 
     private void LayoutLeaves(BPlusTree<int, string> tree)
     {
-        // Use the linked list property of B+ Tree leaves!
+        // Use the linked list property of B+ Tree leaves
         BPlusTreeNode<int, string> current = tree.FirstLeaf;
         float currentX = 0f;
 
         while (current != null)
         {
+            if (!_nodeMap.ContainsKey(current))
+            {
+                current = current.Next;
+                continue;
+            }
+
             RectTransform rt = _nodeMap[current];
             int depth = GetDepth(current); 
             
@@ -95,16 +101,21 @@ public class BPlusTreeVisualizer : MonoBehaviour
             LayoutInternalNodes(child);
         }
 
+        if (!_nodeMap.ContainsKey(node)) return;
+
         RectTransform myRt = _nodeMap[node];
         int depth = GetDepth(node);
 
         if (node.Children.Count == 0)
         {
-            // If an internal node has no children (e.g. due to merging), 
+            // If an internal node has no children (e.g., due to merging), 
             // just place it at X=0. CenterAndFitTree will handle the rest.
             myRt.localPosition = new Vector3(0, -depth * levelHeight, 0);
             return;
         }
+
+        // Ensure critical children are present
+        if (!_nodeMap.ContainsKey(node.Children[0]) || !_nodeMap.ContainsKey(node.Children[node.Children.Count - 1])) return;
 
         // Now place myself based on the children
         RectTransform firstChild = _nodeMap[node.Children[0]];
@@ -180,6 +191,7 @@ public class BPlusTreeVisualizer : MonoBehaviour
     private void DrawConnectionsRecursive(BPlusTreeNode<int, string> node)
     {
         if (node.IsLeaf || node.Children == null) return;
+        if (!_nodeMap.ContainsKey(node)) return;
 
         RectTransform parentRect = _nodeMap[node];
         BPlusTreeVisualNode visualNode = parentRect.GetComponent<BPlusTreeVisualNode>();
@@ -276,6 +288,6 @@ public class BPlusTreeVisualizer : MonoBehaviour
         lineRect.localRotation = Quaternion.Euler(0, 0, angle);
         
         // Set Length (Width of the image)
-        lineRect.sizeDelta = new Vector2(distance, 2f); // 2f is line thickness
+        lineRect.sizeDelta = new Vector2(distance, 3f); // 3f is line thickness
     }
 }
