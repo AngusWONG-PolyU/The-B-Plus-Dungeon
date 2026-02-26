@@ -235,6 +235,15 @@ public class TaskDragManager : MonoBehaviour
         // 2. Cleanup Old Node Structure
         RemoveNodeFromStructure(_dragedNode);
 
+        // Check if root needs to shrink
+        var root = BPlusTreeTaskManager.Instance.CurrentTree.Root;
+        if (!root.IsLeaf && root.Keys.Count == 0 && root.Children.Count == 1)
+        {
+            var newRoot = root.Children[0];
+            newRoot.Parent = null;
+            BPlusTreeTaskManager.Instance.UpdateTreeRoot(newRoot);
+        }
+
         // 3. Refresh Tree
         UpdateTreeVisuals();
         
@@ -261,6 +270,16 @@ public class TaskDragManager : MonoBehaviour
 
         Debug.Log($"Deleting Key {key} from {visualNode.name}");
         RemoveKeyFromNode(visualNode, key);
+        
+        // Check if root needs to shrink
+        var root = BPlusTreeTaskManager.Instance.CurrentTree.Root;
+        if (!root.IsLeaf && root.Keys.Count == 0 && root.Children.Count == 1)
+        {
+            var newRoot = root.Children[0];
+            newRoot.Parent = null;
+            BPlusTreeTaskManager.Instance.UpdateTreeRoot(newRoot);
+        }
+
         UpdateTreeVisuals();
     }
 
