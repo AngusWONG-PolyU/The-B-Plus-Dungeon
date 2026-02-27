@@ -186,6 +186,50 @@ public class BPlusTreeTaskManager : MonoBehaviour
             
             string keysStr = string.Join(", ", _targetKeys);
             if(taskTitleText) taskTitleText.text = $"Insert Key(s) <color=#FFD700>{keysStr}</color> to Unlock the Door!";
+            
+            // Spawn keys in buffer area
+            if (bufferArea != null && treeVisualizer != null && treeVisualizer.nodePrefab != null)
+            {
+                // Clear existing keys in buffer area
+                foreach (Transform child in bufferArea.transform)
+                {
+                    Destroy(child.gameObject);
+                }
+                
+                GameObject keyPrefab = treeVisualizer.nodePrefab.GetComponent<BPlusTreeVisualNode>().keyPrefab;
+                if (keyPrefab != null)
+                {
+                    // Instantiate keys in reverse order so first-target appears on top
+                    for (int i = _targetKeys.Count - 1; i >= 0; i--)
+                    {
+                        int key = _targetKeys[i];
+                        GameObject k = Instantiate(keyPrefab, bufferArea.transform);
+                        TextMeshProUGUI t = k.GetComponentInChildren<TextMeshProUGUI>();
+                        if(t) t.text = key.ToString();
+
+                        // Ensure square shape via LayoutElement if not present
+                        LayoutElement le = k.GetComponent<LayoutElement>();
+                        if (le == null) le = k.AddComponent<LayoutElement>();
+
+                        if (le.preferredWidth <= 0) le.preferredWidth = 50f;
+                        if (le.preferredHeight <= 0) le.preferredHeight = 50f;
+                        le.minWidth = 50f;
+                        le.minHeight = 50f;
+
+                        // Highlight the key for insertion
+                        Image img = k.GetComponent<Image>();
+                        if (img != null)
+                        {
+                            img.color = new Color(0.5f, 0.8f, 0.5f, 1f); // Darker green highlight
+                        }
+
+                        Outline outline = k.GetComponent<Outline>();
+                        if (outline == null) outline = k.AddComponent<Outline>();
+                        outline.effectColor = new Color(0.1f, 0.4f, 0.1f, 1f); // Dark green outline
+                        outline.effectDistance = new Vector2(3, -3);
+                    }
+                }
+            }
         }
 
         // 5. Visualize it
@@ -209,7 +253,6 @@ public class BPlusTreeTaskManager : MonoBehaviour
     
     public bool CheckTreeStatus(BPlusTree<int, string> tree)
     {
-        /* Currently, only check for the leaf for simplification and debugging */
         // 1. Construct the Expected Set of Keys
         HashSet<int> expectedKeys = new HashSet<int>(_initialKeys);
 
@@ -380,10 +423,6 @@ public class BPlusTreeTaskManager : MonoBehaviour
             if (_currentTrigger is EnemyController enemyController)
             {
                 enemyController.ForceFinishChant();
-            }
-            else
-            {
-                // TODO: Implement penalty for the incorrect door task, maybe simply close the task and wait for a restart?
             }
         }
 

@@ -71,17 +71,24 @@ public class TaskContextMenu : MonoBehaviour
             
             // Check Deletion constraints
             bool canDelete = true;
-            if (BPlusTreeTaskManager.Instance != null && 
-                BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion)
+            if (BPlusTreeTaskManager.Instance != null)
             {
                 int val = target.GetValue();
                 BPlusTreeVisualNode parentNode = target.GetParentVisualNode();
-                bool isLeaf = (parentNode != null && parentNode.CoreNode != null && parentNode.CoreNode.IsLeaf);
                 
-                // Restriction applies effectively only to Leaf nodes
-                if (isLeaf && !BPlusTreeTaskManager.Instance.TargetKeys.Contains(val))
+                if (parentNode == null)
                 {
-                    canDelete = false;
+                    canDelete = false; // Cannot delete keys in buffer area
+                }
+                else
+                {
+                    bool isLeaf = (parentNode.CoreNode != null && parentNode.CoreNode.IsLeaf);
+                    
+                    // Restriction applies effectively only to Leaf nodes
+                    if (isLeaf && !BPlusTreeTaskManager.Instance.TargetKeys.Contains(val))
+                    {
+                        canDelete = false;
+                    }
                 }
             }
             
@@ -96,7 +103,8 @@ public class TaskContextMenu : MonoBehaviour
         if (splitNodeButton)
         {
             splitNodeButton.gameObject.SetActive(true);
-            splitNodeButton.interactable = true;
+            BPlusTreeVisualNode node = _currentTargetKey.GetParentVisualNode();
+            splitNodeButton.interactable = (node != null);
         }
         
         // Logic to enable/disable Copy Up based on context
@@ -170,9 +178,17 @@ public class TaskContextMenu : MonoBehaviour
             BPlusTreeVisualNode parentNode = _currentTargetKey.GetParentVisualNode();
             int val = _currentTargetKey.GetValue();
             
-            if (TaskDragManager.Instance != null && parentNode != null)
+            if (TaskDragManager.Instance != null)
             {
-                TaskDragManager.Instance.DeleteKey(parentNode, val);
+                if (parentNode != null)
+                {
+                    TaskDragManager.Instance.DeleteKey(parentNode, val);
+                }
+                else
+                {
+                    // Handle deletion from buffer area (not supported yet, or just ignore)
+                    Debug.LogWarning("Cannot delete keys from buffer area.");
+                }
             }
             
             HideMenu();

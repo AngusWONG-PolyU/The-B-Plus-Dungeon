@@ -72,7 +72,40 @@ public class TaskDragManager : MonoBehaviour
         // 2. Identify Source Node
         if (draggable.originalParent == null) return false;
         BPlusTreeVisualNode sourceNode = draggable.originalParent.GetComponentInParent<BPlusTreeVisualNode>();
-        if (sourceNode == null) return false;
+        
+        // Handle Insertion from Buffer Area
+        if (sourceNode == null)
+        {
+            if (BPlusTreeTaskManager.Instance != null && 
+                BPlusTreeTaskManager.Instance.bufferArea != null &&
+                draggable.originalParent == BPlusTreeTaskManager.Instance.bufferArea.transform)
+            {
+                // Only allow inserting into Leaf nodes
+                if (!targetNode.CoreNode.IsLeaf)
+                {
+                    Debug.LogWarning("Can only insert new keys into Leaf nodes.");
+                    PlayerInstructionUI.Instance?.ShowInstruction("Can only insert new keys into Leaf nodes.", errorInstructionTime, true);
+                    return false;
+                }
+
+                // Capacity Check for Insertion
+                int order = BPlusTreeTaskManager.Instance.treeOrder;
+                int maxKeys = order; // Allow up to 'order' keys so player can split it
+                if (targetNode.CoreNode.Keys.Count >= maxKeys)
+                {
+                    Debug.LogWarning($"Cannot insert: Leaf node is already full (Max {maxKeys} keys).");
+                    PlayerInstructionUI.Instance?.ShowInstruction($"Cannot insert key: Leaf is full (Max {maxKeys}).", errorInstructionTime, true);
+                    return false;
+                }
+
+                Debug.Log($"Operation: Insert Key {keyVal} into Leaf");
+                AddKeyToNode(targetNode, keyVal);
+                UpdateTreeVisuals();
+                Destroy(draggable.gameObject);
+                return true;
+            }
+            return false;
+        }
         
         // Validation calls
         if (sourceNode == targetNode) return false;
@@ -124,7 +157,7 @@ public class TaskDragManager : MonoBehaviour
             {
                 // Capacity Check for Promotion
                 int order = BPlusTreeTaskManager.Instance.treeOrder;
-                int maxKeys = order - 1;
+                int maxKeys = order;
                 if (targetNode.CoreNode.Keys.Count >= maxKeys)
                 {
                     Debug.LogWarning($"Cannot promote: Parent node is already full (Max {maxKeys} keys).");
@@ -143,7 +176,7 @@ public class TaskDragManager : MonoBehaviour
             {
                 // Capacity Check for Demotion
                 int order = BPlusTreeTaskManager.Instance.treeOrder;
-                int maxKeys = order - 1;
+                int maxKeys = order;
                 if (targetNode.CoreNode.Keys.Count >= maxKeys)
                 {
                     Debug.LogWarning($"Cannot demote: Child node is already full (Max {maxKeys} keys).");
@@ -169,7 +202,7 @@ public class TaskDragManager : MonoBehaviour
 
         // Capacity Restriction Check for Borrowing
         int orderForBorrow = BPlusTreeTaskManager.Instance.treeOrder;
-        int maxKeysForBorrow = orderForBorrow - 1;
+        int maxKeysForBorrow = orderForBorrow;
         if (targetNode.CoreNode.Keys.Count >= maxKeysForBorrow)
         {
             Debug.LogWarning($"Cannot borrow: Target node is already full (Max {maxKeysForBorrow} keys).");
@@ -210,7 +243,7 @@ public class TaskDragManager : MonoBehaviour
 
         // Capacity Restriction Check
         int order = BPlusTreeTaskManager.Instance.treeOrder;
-        int maxKeys = order - 1; 
+        int maxKeys = order; 
         // Note: For internal nodes, strict B+ tree merging logic is more complex (involving parent key), 
         // but for this game's visual drag-drop, simpler count check is usually sufficient for feedback.
         if (_dragedNode.CoreNode.Keys.Count + targetNode.CoreNode.Keys.Count > maxKeys)
@@ -267,9 +300,58 @@ public class TaskDragManager : MonoBehaviour
                 return;
             }
         }
+        
+        // Restriction Check for Insertion Task
+        if (BPlusTreeTaskManager.Instance != null && 
+            BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Insertion)
+        {
+            if (visualNode.CoreNode.IsLeaf && !BPlusTreeTaskManager.Instance.TargetKeys.Contains(key))
+            {
+                Debug.LogWarning($"Insertion Task: Cannot delete non-target keys.");
+                PlayerInstructionUI.Instance?.ShowInstruction($"Cannot delete non-target keys.", errorInstructionTime, true);
+                return;
+            }
+        }
 
         Debug.Log($"Deleting Key {key} from {visualNode.name}");
         RemoveKeyFromNode(visualNode, key);
+        
+        // If it's an insertion task and the player deleted a target key in the leaf node, put it back in the buffer area
+        if (BPlusTreeTaskManager.Instance != null && 
+            BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Insertion &&
+            visualNode.CoreNode.IsLeaf &&
+            BPlusTreeTaskManager.Instance.TargetKeys.Contains(key))
+        {
+            if (BPlusTreeTaskManager.Instance.bufferArea != null && BPlusTreeTaskManager.Instance.treeVisualizer != null)
+            {
+                GameObject keyPrefab = BPlusTreeTaskManager.Instance.treeVisualizer.nodePrefab.GetComponent<BPlusTreeVisualNode>().keyPrefab;
+                if (keyPrefab != null)
+                {
+                    GameObject k = Instantiate(keyPrefab, BPlusTreeTaskManager.Instance.bufferArea.transform);
+                    TMPro.TextMeshProUGUI t = k.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                    if(t) t.text = key.ToString();
+                    
+                    LayoutElement le = k.GetComponent<LayoutElement>();
+                    if (le == null) le = k.AddComponent<LayoutElement>();
+                    
+                    if (le.preferredWidth <= 0) le.preferredWidth = 50f;
+                    if (le.preferredHeight <= 0) le.preferredHeight = 50f;
+                    le.minWidth = 50f;
+                    le.minHeight = 50f;
+                    
+                    Image img = k.GetComponent<Image>();
+                    if (img != null)
+                    {
+                        img.color = new Color(0.5f, 0.8f, 0.5f, 1f); // Darker green highlight
+                    }
+                    
+                    Outline outline = k.GetComponent<Outline>();
+                    if (outline == null) outline = k.AddComponent<Outline>();
+                    outline.effectColor = new Color(0.1f, 0.4f, 0.1f, 1f); // Dark green outline
+                    outline.effectDistance = new Vector2(3, -3);
+                }
+            }
+        }
         
         // Check if root needs to shrink
         var root = BPlusTreeTaskManager.Instance.CurrentTree.Root;
@@ -751,6 +833,20 @@ public class TaskDragManager : MonoBehaviour
             parents.Sort((a, b) => GetNodeMinKey(a).CompareTo(GetNodeMinKey(b)));
             children.Sort((a, b) => GetNodeMinKey(a).CompareTo(GetNodeMinKey(b)));
 
+            // If children are leaves, update their linked list to match the new sorted order
+            if (children.Count > 0 && children[0].IsLeaf)
+            {
+                if (BPlusTreeTaskManager.Instance != null && BPlusTreeTaskManager.Instance.CurrentTree != null)
+                {
+                    BPlusTreeTaskManager.Instance.CurrentTree.FirstLeaf = children[0];
+                    for (int i = 0; i < children.Count - 1; i++)
+                    {
+                        children[i].Next = children[i + 1];
+                    }
+                    children[children.Count - 1].Next = null;
+                }
+            }
+
             // Clear existing children links for these parents
             foreach (var p in parents)
             {
@@ -804,7 +900,7 @@ public class TaskDragManager : MonoBehaviour
 
         if (!node.IsLeaf && node.Children != null)
         {
-            // Create a copy of children list to iterate safely since we might modify it later
+            // Create a copy of the children list to iterate safely since we might modify it later
             var childrenCopy = new List<BPlusTreeNode<int, string>>(node.Children);
             foreach (var child in childrenCopy)
             {

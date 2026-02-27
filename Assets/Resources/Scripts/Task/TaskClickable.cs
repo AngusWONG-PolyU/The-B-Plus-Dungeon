@@ -27,8 +27,8 @@ public class TaskClickable : MonoBehaviour, IPointerClickHandler
 
     public BPlusTreeVisualNode GetParentVisualNode()
     {
-        if (_parentVisualNode == null) _parentVisualNode = GetComponentInParent<BPlusTreeVisualNode>();
-        return _parentVisualNode;
+        // Always try to get it dynamically in case it moved
+        return GetComponentInParent<BPlusTreeVisualNode>();
     }
 
     public int GetValue()

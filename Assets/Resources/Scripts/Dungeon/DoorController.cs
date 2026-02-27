@@ -8,7 +8,6 @@ public class DoorController : MonoBehaviour, ITaskTrigger
     public enum DoorType { Disappearing, Sliding, Rotating }
     
     [Header("Task Interaction")]
-    public bool requiresTask = false;
     public bool isTaskLocked = false;
 
     [Header("Settings")]
@@ -37,6 +36,11 @@ public class DoorController : MonoBehaviour, ITaskTrigger
     {
         if (isOpen) return;
         isOpen = true;
+        
+        if (PlayerInstructionUI.Instance != null && isPlayerInCollider)
+        {
+            PlayerInstructionUI.Instance.HideInstruction();
+        }
         
         if (obstacle != null) obstacle.enabled = false;
 
@@ -120,29 +124,149 @@ public class DoorController : MonoBehaviour, ITaskTrigger
         transform.localRotation = targetRot;
     }
 
-    private void OnMouseDown()
+    private bool isPlayerInCollider = false;
+    private bool isTaskActive = false;
+
+    private void OnTriggerEnter(Collider other)
     {
-        if (requiresTask && isTaskLocked && !isOpen)
+        if (other.CompareTag("Player"))
         {
-            if (BPlusTreeTaskManager.Instance != null)
+            isPlayerInCollider = true;
+            
+            // Only show instruction if the player is alive
+            PlayerHealth ph = other.GetComponent<PlayerHealth>();
+            if (ph != null && ph.currentHearts <= 0) return;
+
+            if (isTaskLocked && !isOpen && !isTaskActive)
             {
-                // Trigger Insertion Task for unlocking
-                BPlusTreeTaskManager.Instance.StartTask(this, BPlusTreeTaskType.Insertion);
+                if (PlayerInstructionUI.Instance != null)
+                {
+                    PlayerInstructionUI.Instance.ShowInstruction("Press E to Unlock Door!");
+                }
+            }
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            isPlayerInCollider = false;
+            if (PlayerInstructionUI.Instance != null && isTaskLocked && !isOpen && !isTaskActive)
+            {
+                PlayerInstructionUI.Instance.HideInstruction();
+            }
+        }
+    }
+
+    private void Update()
+    {
+        if (isPlayerInCollider && isTaskLocked && !isOpen && !isTaskActive)
+        {
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                if (PlayerInstructionUI.Instance != null)
+                {
+                    PlayerInstructionUI.Instance.HideInstruction();
+                }
+
+                if (BPlusTreeTaskManager.Instance != null)
+                {
+                    isTaskActive = true;
+                    // Trigger Insertion Task for unlocking
+                    BPlusTreeTaskManager.Instance.StartTask(this, BPlusTreeTaskType.Insertion);
+                }
+            }
+        }
+    }
+
+    public void EnableTaskLock()
+    {
+        isTaskLocked = true;
+        isTaskActive = false;
+    }
+
+    public void DisableTaskLock()
+    {
+        isTaskLocked = false;
+        isTaskActive = false;
+        
+        if (isPlayerInCollider && !isOpen)
+        {
+            if (PlayerInstructionUI.Instance != null)
+            {
+                PlayerInstructionUI.Instance.HideInstruction();
             }
         }
     }
 
     public void OnTaskComplete(bool success)
     {
+        isTaskActive = false;
         if (success)
         {
             Debug.Log("Door Unlocked by Task!");
             isTaskLocked = false;
-            Open();
+            
+            // Tell the Room Controller to unlock ALL doors in this room
+            DungeonRoomController roomController = GetComponentInParent<DungeonRoomController>();
+            if (roomController != null)
+            {
+                roomController.UnlockAllDoors();
+            }
+            else
+            {
+                // Fallback if not in a room
+                Open();
+            }
         }
         else
         {
             Debug.Log("Door Task Failed.");
+            
+            // Deduct player health
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(1);
+                }
+            }
+
+            // Show failure instruction
+            if (PlayerInstructionUI.Instance != null)
+            {
+                PlayerInstructionUI.Instance.ShowInstruction("Security Breach Detected! The Door's Defense Mechanism Activated!\n-1 HP", 3f, true);
+            }
+
+            // Show instruction again if the player is still in the collider after a delay
+            if (isPlayerInCollider && isTaskLocked && !isOpen)
+            {
+                StartCoroutine(ShowUnlockInstructionAfterDelay(3f));
+            }
+        }
+    }
+
+    private IEnumerator ShowUnlockInstructionAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        
+        // Check if player is still alive before showing instruction
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            PlayerHealth ph = player.GetComponent<PlayerHealth>();
+            if (ph != null && ph.currentHearts <= 0) yield break;
+        }
+
+        if (isPlayerInCollider && isTaskLocked && !isOpen && !isTaskActive)
+        {
+            if (PlayerInstructionUI.Instance != null)
+            {
+                PlayerInstructionUI.Instance.ShowInstruction("Press E to Unlock Door!");
+            }
         }
     }
 }

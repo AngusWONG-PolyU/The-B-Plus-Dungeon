@@ -300,7 +300,7 @@ public class DungeonRoomController : MonoBehaviour
         if (isCleared) return;
 
         isCleared = true;
-        UnlockDoors();
+        EnableDoorTasks();
         
         Debug.Log("Room Cleared!");
     }
@@ -314,6 +314,7 @@ public class DungeonRoomController : MonoBehaviour
                 DoorController doorCtrl = door.GetComponent<DoorController>();
                 if (doorCtrl != null)
                 {
+                    doorCtrl.DisableTaskLock();
                     doorCtrl.Close();
                 }
                 else
@@ -324,7 +325,7 @@ public class DungeonRoomController : MonoBehaviour
         }
     }
 
-    private void UnlockDoors()
+    public void UnlockAllDoors()
     {
         foreach (var door in doors)
         {
@@ -333,7 +334,27 @@ public class DungeonRoomController : MonoBehaviour
                 DoorController doorCtrl = door.GetComponent<DoorController>();
                 if (doorCtrl != null)
                 {
+                    doorCtrl.DisableTaskLock();
                     doorCtrl.Open();
+                }
+                else
+                {
+                    door.SetActive(false); // Fallback to simple deactivation
+                }
+            }
+        }
+    }
+
+    private void EnableDoorTasks()
+    {
+        foreach (var door in doors)
+        {
+            if (door != null)
+            {
+                DoorController doorCtrl = door.GetComponent<DoorController>();
+                if (doorCtrl != null)
+                {
+                    doorCtrl.EnableTaskLock();
                 }
                 else
                 {

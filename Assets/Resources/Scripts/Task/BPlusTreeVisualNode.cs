@@ -97,6 +97,23 @@ public class BPlusTreeVisualNode : MonoBehaviour, IPointerClickHandler
                 outline.effectColor = Color.red;
                 outline.effectDistance = new Vector2(3, -3);
             }
+            
+            // Highlight the key if it's the target key for insertion
+            if (BPlusTreeTaskManager.Instance != null && 
+                BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Insertion && 
+                BPlusTreeTaskManager.Instance.TargetKeys.Contains(key))
+            {
+                Image img = k.GetComponent<Image>();
+                if (img != null)
+                {
+                    img.color = new Color(0.5f, 0.8f, 0.5f, 1f); // Darker green highlight
+                }
+                
+                Outline outline = k.GetComponent<Outline>();
+                if (outline == null) outline = k.AddComponent<Outline>();
+                outline.effectColor = new Color(0.1f, 0.4f, 0.1f, 1f); // Dark green outline
+                outline.effectDistance = new Vector2(3, -3);
+            }
 
             SpawnedKeys.Add(k);
         }
