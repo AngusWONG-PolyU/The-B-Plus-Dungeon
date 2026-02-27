@@ -306,6 +306,38 @@ public class BPlusTreeTaskManager : MonoBehaviour
             return false;
         }
 
+        // 7. Leaf Sequence Order
+        if (!CheckLeafSequenceOrder(tree.FirstLeaf, out error))
+        {
+            Debug.Log($"Validation Failed: Leaf Sequence Order. {error}");
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool CheckLeafSequenceOrder(BPlusTreeNode<int, string> firstLeaf, out string error)
+    {
+        error = "";
+        if (firstLeaf == null) return true;
+
+        BPlusTreeNode<int, string> current = firstLeaf;
+        int lastKey = int.MinValue;
+
+        while (current != null)
+        {
+            foreach (int key in current.Keys)
+            {
+                if (key <= lastKey)
+                {
+                    error = $"Leaf keys are not in strictly increasing order. Found {key} after {lastKey}.";
+                    return false;
+                }
+                lastKey = key;
+            }
+            current = current.Next;
+        }
+
         return true;
     }
 

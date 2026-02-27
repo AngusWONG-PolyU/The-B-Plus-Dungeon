@@ -411,6 +411,16 @@ public class TaskDragManager : MonoBehaviour
         }
         
         BPlusTreeNode<int, string> parentNode = node.CoreNode.Parent;
+
+        // Capacity Check for Copy Up
+        int maxKeys = BPlusTreeTaskManager.Instance.treeOrder;
+        if (parentNode.Keys.Count >= maxKeys)
+        {
+            Debug.LogWarning($"Cannot copy up: Parent node is already full (Max {maxKeys} keys).");
+            PlayerInstructionUI.Instance?.ShowInstruction($"Cannot copy up: Parent is full (Max {maxKeys}).", errorInstructionTime, true);
+            return;
+        }
+
         if (parentNode.Keys.Contains(key))
         {
             Debug.LogWarning("Key already exists in parent node.");
@@ -583,6 +593,15 @@ public class TaskDragManager : MonoBehaviour
     // Used by Drag & Drop which has a target visual node
     private bool PerformCopyUp(BPlusTreeVisualNode targetInternalNode, int key)
     {
+        // Capacity Check for Copy Up
+        int maxKeys = BPlusTreeTaskManager.Instance.treeOrder;
+        if (targetInternalNode.CoreNode.Keys.Count >= maxKeys)
+        {
+            Debug.LogWarning($"Cannot copy up: Target internal node is already full (Max {maxKeys} keys).");
+            PlayerInstructionUI.Instance?.ShowInstruction($"Cannot copy up: Target is full (Max {maxKeys}).", errorInstructionTime, true);
+            return false;
+        }
+
         // Check duplicate in the target node
         if (targetInternalNode.CoreNode.Keys.Contains(key)) return false;
 
@@ -799,94 +818,13 @@ public class TaskDragManager : MonoBehaviour
     {
         if (BPlusTreeTaskManager.Instance != null)
         {
-            AutoReparentChildren(BPlusTreeTaskManager.Instance.CurrentTree.Root);
+            // AutoReparentChildren(BPlusTreeTaskManager.Instance.CurrentTree.Root); // Removed to improve intuitiveness and fix sequential order bugs
             BPlusTreeTaskManager.Instance.RefreshTree();
             StartCoroutine(ValidateAllNodesRoutine());
         }
     }
 
-    private void AutoReparentChildren(BPlusTreeNode<int, string> root)
-    {
-        if (root == null || root.IsLeaf) return;
-
-        // 1. Collect all internal nodes and leaf nodes level by level
-        Dictionary<int, List<BPlusTreeNode<int, string>>> nodesByLevel = new Dictionary<int, List<BPlusTreeNode<int, string>>>();
-        CollectNodesByLevel(root, 0, nodesByLevel);
-
-        // 2. Process from bottom up (excluding leaves at the very bottom)
-        int maxDepth = 0;
-        foreach (var depth in nodesByLevel.Keys)
-        {
-            if (depth > maxDepth) maxDepth = depth;
-        }
-
-        for (int depth = maxDepth - 1; depth >= 0; depth--)
-        {
-            if (!nodesByLevel.ContainsKey(depth) || !nodesByLevel.ContainsKey(depth + 1)) continue;
-
-            List<BPlusTreeNode<int, string>> parents = nodesByLevel[depth];
-            List<BPlusTreeNode<int, string>> children = nodesByLevel[depth + 1];
-
-            if (parents.Count == 0 || children.Count == 0) continue;
-
-            // Sort parents and children by their first key (or subtree min)
-            parents.Sort((a, b) => GetNodeMinKey(a).CompareTo(GetNodeMinKey(b)));
-            children.Sort((a, b) => GetNodeMinKey(a).CompareTo(GetNodeMinKey(b)));
-
-            // If children are leaves, update their linked list to match the new sorted order
-            if (children.Count > 0 && children[0].IsLeaf)
-            {
-                if (BPlusTreeTaskManager.Instance != null && BPlusTreeTaskManager.Instance.CurrentTree != null)
-                {
-                    BPlusTreeTaskManager.Instance.CurrentTree.FirstLeaf = children[0];
-                    for (int i = 0; i < children.Count - 1; i++)
-                    {
-                        children[i].Next = children[i + 1];
-                    }
-                    children[children.Count - 1].Next = null;
-                }
-            }
-
-            // Clear existing children links for these parents
-            foreach (var p in parents)
-            {
-                p.Children.Clear();
-            }
-
-            // Re-assign children to parents based on keys
-            int childIndex = 0;
-            for (int pIndex = 0; pIndex < parents.Count; pIndex++)
-            {
-                var parent = parents[pIndex];
-                
-                // A parent can have (Keys.Count + 1) children
-                int maxChildrenForThisParent = parent.Keys.Count + 1;
-                
-                // If it's the last parent, it takes all remaining children
-                if (pIndex == parents.Count - 1)
-                {
-                    while (childIndex < children.Count)
-                    {
-                        parent.Children.Add(children[childIndex]);
-                        children[childIndex].Parent = parent;
-                        childIndex++;
-                    }
-                }
-                else
-                {
-                    // Assign up to maxChildrenForThisParent
-                    int assigned = 0;
-                    while (childIndex < children.Count && assigned < maxChildrenForThisParent)
-                    {
-                        parent.Children.Add(children[childIndex]);
-                        children[childIndex].Parent = parent;
-                        childIndex++;
-                        assigned++;
-                    }
-                }
-            }
-        }
-    }
+    // AutoReparentChildren removed to improve intuitiveness and fix sequential order bugs
 
     private void CollectNodesByLevel(BPlusTreeNode<int, string> node, int depth, Dictionary<int, List<BPlusTreeNode<int, string>>> dict)
     {
@@ -929,6 +867,58 @@ public class TaskDragManager : MonoBehaviour
         foreach(var node in allNodes)
         {
             CheckUnderflow(node);
+            CheckRouting(node);
+        }
+    }
+
+    private void CheckRouting(BPlusTreeVisualNode node)
+    {
+        if (node == null || node.CoreNode == null || node.CoreNode.IsLeaf) return;
+
+        bool hasRoutingError = false;
+        var coreNode = node.CoreNode;
+
+        // Check if children's keys are valid according to this node's keys
+        for (int i = 0; i < coreNode.Children.Count; i++)
+        {
+            var child = coreNode.Children[i];
+            if (child.Keys.Count == 0) continue;
+
+            int childMinKey = GetNodeMinKey(child);
+            int childMaxKey = GetNodeMaxKey(child);
+
+            // Leftmost child: all keys must be < coreNode.Keys[0]
+            if (i == 0 && coreNode.Keys.Count > 0)
+            {
+                if (childMaxKey >= coreNode.Keys[0]) hasRoutingError = true;
+            }
+            // Rightmost child: all keys must be >= coreNode.Keys[last]
+            else if (i == coreNode.Keys.Count && coreNode.Keys.Count > 0)
+            {
+                if (childMinKey < coreNode.Keys[coreNode.Keys.Count - 1]) hasRoutingError = true;
+            }
+            // Middle children: keys must be >= coreNode.Keys[i-1] and < coreNode.Keys[i]
+            else if (i > 0 && i < coreNode.Keys.Count)
+            {
+                if (childMinKey < coreNode.Keys[i - 1] || childMaxKey >= coreNode.Keys[i]) hasRoutingError = true;
+            }
+        }
+
+        if (hasRoutingError && ShouldHighlightError())
+        {
+            node.SetHighlight(true, true); // Orange highlight for routing error
+        }
+    }
+
+    private int GetNodeMaxKey(BPlusTreeNode<int, string> node)
+    {
+        if (node.IsLeaf)
+        {
+            return node.Keys.Count > 0 ? node.Keys[node.Keys.Count - 1] : int.MinValue;
+        }
+        else
+        {
+            return node.Children.Count > 0 ? GetNodeMaxKey(node.Children[node.Children.Count - 1]) : int.MinValue;
         }
     }
 
@@ -936,6 +926,18 @@ public class TaskDragManager : MonoBehaviour
     {
         if (node == null || node.CoreNode == null) return;
         
+        // Don't check underflow for root node unless it's a leaf
+        if (node.CoreNode == BPlusTreeTaskManager.Instance.CurrentTree.Root && !node.CoreNode.IsLeaf)
+        {
+            // Root internal node can have 1 key (2 children)
+            if (node.CoreNode.Keys.Count >= 1)
+            {
+                // If it was highlighted for routing error, don't clear it here
+                if (!node.IsHighlighted) node.SetHighlight(false);
+                return;
+            }
+        }
+
         int order = BPlusTreeTaskManager.Instance.treeOrder;
         int minKeys = (int)Mathf.Ceil((order - 1) / 2.0f);
         

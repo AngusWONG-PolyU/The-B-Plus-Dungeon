@@ -40,6 +40,7 @@ public class BPlusTreeVisualizer : MonoBehaviour
 
         // 5. Draw Connections
         DrawConnectionsRecursive(tree.Root);
+        DrawLeafConnections(tree);
     }
 
     private void SpawnNodesRecursive(BPlusTreeNode<int, string> node)
@@ -226,7 +227,7 @@ public class BPlusTreeVisualizer : MonoBehaviour
         if (visualNode.SpawnedKeys.Count == 0) return 0f;
         
         // Ensure layout is up to date (might be redundant but safe)
-        // LayoutRebuilder.ForceRebuildLayoutImmediate(visualNode.GetComponent<RectTransform>());
+        LayoutRebuilder.ForceRebuildLayoutImmediate(visualNode.GetComponent<RectTransform>());
 
         RectTransform nodeRect = visualNode.GetComponent<RectTransform>();
         
@@ -289,5 +290,42 @@ public class BPlusTreeVisualizer : MonoBehaviour
         
         // Set Length (Width of the image)
         lineRect.sizeDelta = new Vector2(distance, 3f); // 3f is line thickness
+    }
+
+    private void DrawLeafConnections(BPlusTree<int, string> tree)
+    {
+        if (linkLinePrefab == null || tree.FirstLeaf == null) return;
+
+        BPlusTreeNode<int, string> current = tree.FirstLeaf;
+        while (current != null && current.Next != null)
+        {
+            if (_nodeMap.ContainsKey(current) && _nodeMap.ContainsKey(current.Next))
+            {
+                RectTransform leftNode = _nodeMap[current];
+                RectTransform rightNode = _nodeMap[current.Next];
+
+                GameObject lineObj = Instantiate(linkLinePrefab, treeContainer);
+                lineObj.transform.SetAsFirstSibling();
+                RectTransform lineRect = lineObj.GetComponent<RectTransform>();
+
+                // Start: Right edge of left node
+                Vector3 startPos = leftNode.localPosition + new Vector3(leftNode.rect.width / 2f, 0, 0);
+                // End: Left edge of right node
+                Vector3 endPos = rightNode.localPosition - new Vector3(rightNode.rect.width / 2f, 0, 0);
+
+                Vector3 direction = endPos - startPos;
+                float distance = direction.magnitude;
+
+                lineRect.localPosition = startPos;
+                float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+                lineRect.localRotation = Quaternion.Euler(0, 0, angle);
+                lineRect.sizeDelta = new Vector2(distance, 4f);
+                
+                // Optional: Change color for leaf connections to distinguish them
+                Image img = lineObj.GetComponent<Image>();
+                if (img != null) img.color = new Color(0.2f, 0.6f, 1f, 0.5f); // Light blue, semi-transparent
+            }
+            current = current.Next;
+        }
     }
 }

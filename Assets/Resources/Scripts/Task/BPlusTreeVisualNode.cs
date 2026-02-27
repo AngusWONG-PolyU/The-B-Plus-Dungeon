@@ -35,22 +35,36 @@ public class BPlusTreeVisualNode : MonoBehaviour, IPointerClickHandler
         RenderKeys();
     }
 
-    public void SetHighlight(bool isError)
+    public void SetHighlight(bool isError, bool isRoutingError = false)
     {
         IsHighlighted = isError;
         Image img = GetComponent<Image>();
         if(img != null)
         {
-            // Red for error (underflow/overflow), White/Gray for normal
-            img.color = isError ? new Color(1f, 0.5f, 0.5f, 0.8f) : new Color(1f, 1f, 1f, 0.5f);
+            if (isRoutingError)
+            {
+                img.color = new Color(1f, 0.8f, 0.2f, 0.8f); // Orange for routing error
+            }
+            else
+            {
+                // Red for error (underflow/overflow), White/Gray for normal
+                img.color = isError ? new Color(1f, 0.5f, 0.5f, 0.8f) : new Color(1f, 1f, 1f, 0.5f);
+            }
         }
         
         // Pulse animation or Outline color change
         Outline outline = GetComponent<Outline>();
         if(outline != null)
         {
-             outline.effectColor = isError ? Color.red : Color.black;
-             outline.effectDistance = isError ? new Vector2(3, -3) : new Vector2(2, -2);
+             if (isRoutingError)
+             {
+                 outline.effectColor = new Color(1f, 0.5f, 0f, 1f); // Dark orange
+             }
+             else
+             {
+                 outline.effectColor = isError ? Color.red : Color.black;
+             }
+             outline.effectDistance = isError || isRoutingError ? new Vector2(3, -3) : new Vector2(2, -2);
         }
     }
 
