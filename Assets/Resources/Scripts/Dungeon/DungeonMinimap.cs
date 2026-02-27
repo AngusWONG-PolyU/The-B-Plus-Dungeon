@@ -396,8 +396,32 @@ public class DungeonMinimap : MonoBehaviour
         CalculateSubtreeWidth(dungeonTree.Root, subtreeWidths);
         
         DisplayTreeRecursive(dungeonTree.Root, 0, 0, subtreeWidths);
+        DrawLeafConnections(dungeonTree);
     }
     
+    private void DrawLeafConnections(BPlusTree<int, int> tree)
+    {
+        if (tree.FirstLeaf == null) return;
+
+        BPlusTreeNode<int, int> current = tree.FirstLeaf;
+        while (current != null && current.Next != null)
+        {
+            if (nodeToGameObject.ContainsKey(current) && nodeToGameObject.ContainsKey(current.Next))
+            {
+                RectTransform leftNode = nodeToGameObject[current].GetComponent<RectTransform>();
+                RectTransform rightNode = nodeToGameObject[current.Next].GetComponent<RectTransform>();
+
+                // Start: Right edge of left node
+                Vector2 startPos = leftNode.anchoredPosition + new Vector2(CurrentNodeSize.x / 2f, 0);
+                // End: Left edge of right node
+                Vector2 endPos = rightNode.anchoredPosition - new Vector2(CurrentNodeSize.x / 2f, 0);
+
+                CreateConnectionLine(startPos, endPos, true);
+            }
+            current = current.Next;
+        }
+    }
+
     // Calculate the width of each subtree
     private float CalculateSubtreeWidth(BPlusTreeNode<int, int> node, Dictionary<BPlusTreeNode<int, int>, float> widths)
     {
@@ -518,6 +542,27 @@ public class DungeonMinimap : MonoBehaviour
             
             CreateConnectionLine(fromPoint, toPoint);
         }
+
+        // Draw leaf connections for children if they are leaves
+        if (node.Children.Count > 0 && node.Children[0].IsLeaf)
+        {
+            for (int i = 0; i < node.Children.Count - 1; i++)
+            {
+                BPlusTreeNode<int, int> leftChild = node.Children[i];
+                BPlusTreeNode<int, int> rightChild = node.Children[i + 1];
+
+                if (nodeToGameObject.ContainsKey(leftChild) && nodeToGameObject.ContainsKey(rightChild))
+                {
+                    RectTransform leftNodeRect = nodeToGameObject[leftChild].GetComponent<RectTransform>();
+                    RectTransform rightNodeRect = nodeToGameObject[rightChild].GetComponent<RectTransform>();
+
+                    Vector2 startPos = leftNodeRect.anchoredPosition + new Vector2(CurrentNodeSize.x / 2f, 0);
+                    Vector2 endPos = rightNodeRect.anchoredPosition - new Vector2(CurrentNodeSize.x / 2f, 0);
+
+                    CreateConnectionLine(startPos, endPos, true);
+                }
+            }
+        }
     }
     
     // Creates a visual display for a tree node
@@ -601,7 +646,7 @@ public class DungeonMinimap : MonoBehaviour
     }
 
     // Creates a connection line between two nodes
-    private void CreateConnectionLine(Vector3 from, Vector3 to)
+    private void CreateConnectionLine(Vector3 from, Vector3 to, bool isLeafConnection = false)
     {
         GameObject lineObj;
         
@@ -616,7 +661,7 @@ public class DungeonMinimap : MonoBehaviour
             lineObj.transform.SetParent(minimapContainer);
             
             Image line = lineObj.AddComponent<Image>();
-            line.color = connectionLineColor;
+            line.color = isLeafConnection ? new Color(0.2f, 0.6f, 1f, 0.5f) : connectionLineColor;
             
             // Create a simple white texture for the line
             Texture2D tex = new Texture2D(1, 1);
@@ -634,7 +679,7 @@ public class DungeonMinimap : MonoBehaviour
         float distance = direction.magnitude;
         
         rect.anchoredPosition = (fromPos + toPos) / 2f;
-        rect.sizeDelta = new Vector2(distance, 3f); // Slightly thicker line
+        rect.sizeDelta = new Vector2(distance, isLeafConnection ? 4f : 3f); // Slightly thicker line
         rect.rotation = Quaternion.FromToRotation(Vector3.right, direction);
         
         // Make sure line renders behind nodes
