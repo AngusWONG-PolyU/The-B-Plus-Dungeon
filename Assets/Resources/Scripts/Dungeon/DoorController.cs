@@ -208,6 +208,11 @@ public class DoorController : MonoBehaviour, ITaskTrigger
             Debug.Log("Door Unlocked by Task!");
             isTaskLocked = false;
             
+            if (PlayerInstructionUI.Instance != null)
+            {
+                PlayerInstructionUI.Instance.ShowInstruction("Door Unlocked!", 3f);
+            }
+
             // Tell the Room Controller to unlock ALL doors in this room
             DungeonRoomController roomController = GetComponentInParent<DungeonRoomController>();
             if (roomController != null)
@@ -238,7 +243,7 @@ public class DoorController : MonoBehaviour, ITaskTrigger
             // Show failure instruction
             if (PlayerInstructionUI.Instance != null)
             {
-                PlayerInstructionUI.Instance.ShowInstruction("Security Breach Detected! The Door's Defense Mechanism Activated!\n-1 HP", 3f, true);
+                PlayerInstructionUI.Instance.ShowInstruction("Magic Key Insertion Failed! The Door's Defensive Counter-Spell has been Activated!\nBRACE FOR IMPACT!", 3f, true);
             }
 
             // Show instruction again if the player is still in the collider after a delay

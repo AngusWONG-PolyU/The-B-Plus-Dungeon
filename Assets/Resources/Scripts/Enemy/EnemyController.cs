@@ -278,7 +278,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
                     Debug.Log("Critical Vulnerability! Player unlocked before chant is finished halfway.");
                     if (PlayerInstructionUI.Instance != null)
                     {
-                        PlayerInstructionUI.Instance.ShowInstruction("Speed Breaker! Rapid mana collapse exposed a fatal flaw!\nNEXT ATTACK CRITICAL!", 3f);
+                        PlayerInstructionUI.Instance.ShowInstruction("Speed Breaker! Rapid Mana Collapse Exposed a Fatal Flaw!\nNEXT ATTACK CRITICAL!", 3f);
                     }
                 }
                 else
@@ -505,6 +505,11 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         isDead = true;
         UpdateShield(false); // Remove Shield
         
+        if (PlayerInstructionUI.Instance != null)
+        {
+            PlayerInstructionUI.Instance.ShowInstruction("Enemy Defeated!", 3f);
+        }
+
         // Unlock player and destroy magic if active
         if (activeLockMagic != null)
         {
