@@ -119,7 +119,7 @@ public class TaskDragManager : MonoBehaviour
             if (sourceNode.CoreNode.Parent == targetNode.CoreNode)
             {
                 Debug.Log("Operation: Copy Up (Leaf -> Parent)");
-                bool success = PerformCopyUp(targetNode, keyVal);
+                bool success = CopyKeyToParent(sourceNode, keyVal);
                 if (success)
                 {
                     Destroy(draggable.gameObject); 
@@ -127,8 +127,6 @@ public class TaskDragManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning("Key already exists in an internal node.");
-                    PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in an internal node.", errorInstructionTime, true);
                     return false;
                 }
             }
@@ -390,55 +388,59 @@ public class TaskDragManager : MonoBehaviour
         UpdateTreeVisuals();
     }
 
-    // Public method for Context Menu to call
-    public void CopyKeyToParent(BPlusTreeVisualNode node, int key)
+    // Public method for Context Menu and Drag & Drop to call
+    public bool CopyKeyToParent(BPlusTreeVisualNode node, int key)
     {
-        if (node == null || node.CoreNode == null) return;
+        if (node == null || node.CoreNode == null) return false;
 
         // Validation
         if (!node.CoreNode.IsLeaf)
         {
             Debug.LogWarning("Copy Up is only valid for Leaf Nodes.");
             PlayerInstructionUI.Instance?.ShowInstruction("Copy Up is only valid for Leaf Nodes.", errorInstructionTime, true);
-            return;
+            return false;
         }
 
         // Handle No Parent (Root)
         if (node.CoreNode.Parent == null)
         {
             CreateNewRootFromChild(node.CoreNode);
-            return;
+            return true;
         }
         
         BPlusTreeNode<int, string> parentNode = node.CoreNode.Parent;
-
+        
         // Capacity Check for Copy Up
         int maxKeys = BPlusTreeTaskManager.Instance.treeOrder;
         if (parentNode.Keys.Count >= maxKeys)
         {
             Debug.LogWarning($"Cannot copy up: Parent node is already full (Max {maxKeys} keys).");
             PlayerInstructionUI.Instance?.ShowInstruction($"Cannot copy up: Parent is full (Max {maxKeys}).", errorInstructionTime, true);
-            return;
+            return false;
         }
 
+        // Check duplicate in the parent node
         if (parentNode.Keys.Contains(key))
         {
             Debug.LogWarning("Key already exists in parent node.");
             PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in parent node.", errorInstructionTime, true);
-            return;
+            return false;
         }
 
+        // Check duplicate in ALL internal nodes
         if (IsKeyInAnyInternalNode(BPlusTreeTaskManager.Instance.CurrentTree.Root, key))
         {
             Debug.LogWarning("Key already exists in an internal node.");
             PlayerInstructionUI.Instance?.ShowInstruction("Key already exists in an internal node.", errorInstructionTime, true);
-            return;
+            return false;
         }
 
+        // Add to parent node
         parentNode.Keys.Add(key);
         parentNode.Keys.Sort();
         
         UpdateTreeVisuals();
+        return true;
     }
 
     public void SplitNode(BPlusTreeVisualNode node, int splitKey)
@@ -587,36 +589,6 @@ public class TaskDragManager : MonoBehaviour
         }
 
         return false;
-    }
-
-    // Copy Up Logic
-    // Used by Drag & Drop which has a target visual node
-    private bool PerformCopyUp(BPlusTreeVisualNode targetInternalNode, int key)
-    {
-        // Capacity Check for Copy Up
-        int maxKeys = BPlusTreeTaskManager.Instance.treeOrder;
-        if (targetInternalNode.CoreNode.Keys.Count >= maxKeys)
-        {
-            Debug.LogWarning($"Cannot copy up: Target internal node is already full (Max {maxKeys} keys).");
-            PlayerInstructionUI.Instance?.ShowInstruction($"Cannot copy up: Target is full (Max {maxKeys}).", errorInstructionTime, true);
-            return false;
-        }
-
-        // Check duplicate in the target node
-        if (targetInternalNode.CoreNode.Keys.Contains(key)) return false;
-
-        // Check duplicate in ALL internal nodes
-        if (IsKeyInAnyInternalNode(BPlusTreeTaskManager.Instance.CurrentTree.Root, key))
-        {
-            return false;
-        }
-
-        // Add to internal node
-        targetInternalNode.CoreNode.Keys.Add(key);
-        targetInternalNode.CoreNode.Keys.Sort();
-        
-        UpdateTreeVisuals();
-        return true;
     }
 
     private bool IsKeyInAnyInternalNode(BPlusTreeNode<int, string> node, int key)
@@ -818,13 +790,10 @@ public class TaskDragManager : MonoBehaviour
     {
         if (BPlusTreeTaskManager.Instance != null)
         {
-            // AutoReparentChildren(BPlusTreeTaskManager.Instance.CurrentTree.Root); // Removed to improve intuitiveness and fix sequential order bugs
             BPlusTreeTaskManager.Instance.RefreshTree();
             StartCoroutine(ValidateAllNodesRoutine());
         }
     }
-
-    // AutoReparentChildren removed to improve intuitiveness and fix sequential order bugs
 
     private void CollectNodesByLevel(BPlusTreeNode<int, string> node, int depth, Dictionary<int, List<BPlusTreeNode<int, string>>> dict)
     {
