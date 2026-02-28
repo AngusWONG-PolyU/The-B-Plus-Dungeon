@@ -177,6 +177,8 @@ public class DungeonRoomController : MonoBehaviour
             EnemyController ec = boss.GetComponent<EnemyController>();
             if (ec != null)
             {
+                ec.isBoss = true;
+                ec.maxHealth = 5;
                 ec.ResetEnemy();
 
                 if (dungeonManager != null && dungeonManager.dungeonGenerator != null)
@@ -217,6 +219,8 @@ public class DungeonRoomController : MonoBehaviour
             EnemyController ec = selectedEnemy.GetComponent<EnemyController>();
             if (ec != null)
             {
+                ec.isBoss = false;
+                ec.maxHealth = 3;
                 ec.ResetEnemy();
 
                 if (dungeonManager != null && dungeonManager.dungeonGenerator != null)

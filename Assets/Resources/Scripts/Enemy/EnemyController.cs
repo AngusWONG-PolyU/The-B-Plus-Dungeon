@@ -7,6 +7,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
     private bool isTaskCompleted = false;
 
     [Header("Stats")]
+    public bool isBoss = false;
     public int maxHealth = 3;
     public float detectionRange = 10f;
     
@@ -46,6 +47,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
 
     private void Awake()
     {
+        if (isBoss) maxHealth = 5;
         baseChantDuration = chantDuration; // Initialize base duration once
     }
 
@@ -507,7 +509,8 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         
         if (PlayerInstructionUI.Instance != null)
         {
-            PlayerInstructionUI.Instance.ShowInstruction("Enemy Defeated!", 3f);
+            string defeatMessage = isBoss ? "Boss Defeated!" : "Enemy Defeated!";
+            PlayerInstructionUI.Instance.ShowInstruction(defeatMessage, 3f);
         }
 
         // Unlock player and destroy magic if active
