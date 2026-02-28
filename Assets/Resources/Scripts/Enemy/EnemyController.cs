@@ -510,7 +510,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         if (PlayerInstructionUI.Instance != null)
         {
             string defeatMessage = isBoss ? "Boss Defeated!" : "Enemy Defeated!";
-            PlayerInstructionUI.Instance.ShowInstruction(defeatMessage, 3f);
+            PlayerInstructionUI.Instance.ShowInstruction(defeatMessage, 1f);
         }
 
         // Unlock player and destroy magic if active

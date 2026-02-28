@@ -37,11 +37,6 @@ public class DoorController : MonoBehaviour, ITaskTrigger
         if (isOpen) return;
         isOpen = true;
         
-        if (PlayerInstructionUI.Instance != null && isPlayerInCollider)
-        {
-            PlayerInstructionUI.Instance.HideInstruction();
-        }
-        
         if (obstacle != null) obstacle.enabled = false;
 
         StopAllCoroutines();
@@ -190,14 +185,6 @@ public class DoorController : MonoBehaviour, ITaskTrigger
     {
         isTaskLocked = false;
         isTaskActive = false;
-        
-        if (isPlayerInCollider && !isOpen)
-        {
-            if (PlayerInstructionUI.Instance != null)
-            {
-                PlayerInstructionUI.Instance.HideInstruction();
-            }
-        }
     }
 
     public void OnTaskComplete(bool success)
@@ -207,11 +194,6 @@ public class DoorController : MonoBehaviour, ITaskTrigger
         {
             Debug.Log("Door Unlocked by Task!");
             isTaskLocked = false;
-            
-            if (PlayerInstructionUI.Instance != null)
-            {
-                PlayerInstructionUI.Instance.ShowInstruction("Door Unlocked!", 3f);
-            }
 
             // Tell the Room Controller to unlock ALL doors in this room
             DungeonRoomController roomController = GetComponentInParent<DungeonRoomController>();
@@ -223,6 +205,11 @@ public class DoorController : MonoBehaviour, ITaskTrigger
             {
                 // Fallback if not in a room
                 Open();
+            }
+            
+            if (PlayerInstructionUI.Instance != null)
+            {
+                PlayerInstructionUI.Instance.ShowInstruction("Door Unlocked!", 1f);
             }
         }
         else
@@ -258,7 +245,7 @@ public class DoorController : MonoBehaviour, ITaskTrigger
     {
         yield return new WaitForSeconds(delay);
         
-        // Check if player is still alive before showing instruction
+        // Check if the player is still alive before showing the instruction
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
