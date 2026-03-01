@@ -79,14 +79,14 @@ public class BPlusTreeTaskManager : MonoBehaviour
         if(timerText) 
         {
             timerText.gameObject.SetActive(true);
-            timerText.color = Color.white;
+            timerText.color = Color.black;
             timerText.text = "";
         }
 
         if(treeOrderText)
         {
             treeOrderText.gameObject.SetActive(true);
-            treeOrderText.color = Color.white;
+            treeOrderText.color = Color.black;
             treeOrderText.text = "";
         }
         
@@ -242,7 +242,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
         {
             timerText.text = $"Time: {remainingTime:F1}s";
             if(remainingTime <= totalDuration / 2f) timerText.color = Color.red;
-            else timerText.color = Color.white;
+            else timerText.color = Color.black;
         }
     }
 
