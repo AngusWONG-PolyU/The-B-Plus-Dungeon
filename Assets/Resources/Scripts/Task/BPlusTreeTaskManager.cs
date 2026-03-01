@@ -261,6 +261,56 @@ public class BPlusTreeTaskManager : MonoBehaviour
     public void RefreshTree()
     {
         if(treeVisualizer) treeVisualizer.RenderTree(_currentTree);
+        ValidateSubmitButtonState();
+    }
+    
+    private void ValidateSubmitButtonState()
+    {
+        if (submitButtonText == null) return;
+        Button submitBtn = submitButtonText.GetComponentInParent<Button>();
+        if (submitBtn == null) return;
+
+        if (_inResultPhase)
+        {
+            submitBtn.interactable = true;
+            return;
+        }
+
+        if (_currentTree == null)
+        {
+            submitBtn.interactable = false;
+            return;
+        }
+
+        List<int> currentKeys = new List<int>();
+        CollectKeys(_currentTree.Root, currentKeys);
+
+        bool canSubmit = true;
+
+        if (_currentTaskType == BPlusTreeTaskType.Insertion)
+        {
+            foreach (int key in _targetKeys)
+            {
+                if (!currentKeys.Contains(key))
+                {
+                    canSubmit = false;
+                    break;
+                }
+            }
+        }
+        else if (_currentTaskType == BPlusTreeTaskType.Deletion)
+        {
+            foreach (int key in _targetKeys)
+            {
+                if (currentKeys.Contains(key))
+                {
+                    canSubmit = false;
+                    break;
+                }
+            }
+        }
+
+        submitBtn.interactable = canSubmit;
     }
     
     public bool CheckTreeStatus(BPlusTree<int, string> tree)
@@ -628,6 +678,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
         
         // Enter Result Phase
         _inResultPhase = true;
+        ValidateSubmitButtonState();
 
         if (submitButtonText != null)
         {
