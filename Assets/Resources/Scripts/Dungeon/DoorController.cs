@@ -14,6 +14,9 @@ public class DoorController : MonoBehaviour, ITaskTrigger
     public DoorType type = DoorType.Disappearing;
     public float animationDuration = 1.0f;
     
+    [Header("Task Settings")]
+    public float unlockTimeLimit = 30f;
+    
     [Header("Sliding Settings")]
     public Vector3 slideOffset = new Vector3(0, -3, 0); // Default slide down
     
@@ -121,6 +124,8 @@ public class DoorController : MonoBehaviour, ITaskTrigger
 
     private bool isPlayerInCollider = false;
     private bool isTaskActive = false;
+    private bool isTaskCompleted = false;
+    private Coroutine taskCoroutine;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -165,14 +170,53 @@ public class DoorController : MonoBehaviour, ITaskTrigger
                     PlayerInstructionUI.Instance.HideInstruction();
                 }
 
-                if (BPlusTreeTaskManager.Instance != null)
-                {
-                    isTaskActive = true;
-                    // Trigger Insertion Task for unlocking
-                    BPlusTreeTaskManager.Instance.StartTask(this, BPlusTreeTaskType.Insertion);
-                }
+                if (taskCoroutine != null) StopCoroutine(taskCoroutine);
+                taskCoroutine = StartCoroutine(TaskRoutine());
             }
         }
+    }
+
+    private IEnumerator TaskRoutine()
+    {
+        isTaskActive = true;
+        isTaskCompleted = false;
+
+        if (BPlusTreeTaskManager.Instance != null)
+        {
+            BPlusTreeTaskManager.Instance.StartTask(this, BPlusTreeTaskType.Insertion);
+        }
+
+        float timer = 0f;
+        while (timer < unlockTimeLimit)
+        {
+            if (BPlusTreeTaskManager.Instance != null)
+            {
+                BPlusTreeTaskManager.Instance.UpdateTaskTimer(unlockTimeLimit - timer, unlockTimeLimit);
+            }
+
+            if (isTaskCompleted)
+            {
+                // Task was completed successfully (handled in OnTaskComplete)
+                yield break;
+            }
+
+            yield return null;
+            timer += Time.deltaTime;
+        }
+
+        // Time's up!
+        if (PlayerInstructionUI.Instance != null)
+        {
+            PlayerInstructionUI.Instance.ShowInstruction("Time's Up! The Door's Auto Counter-Spell has been Activated!\nBRACE FOR IMPACT!", 3f, true);
+        }
+
+        if (BPlusTreeTaskManager.Instance != null)
+        {
+            BPlusTreeTaskManager.Instance.CloseTask(false);
+        }
+
+        // Simulate failure to trigger the -1HP logic in OnTaskComplete
+        OnTaskComplete(false);
     }
 
     public void EnableTaskLock()
@@ -190,8 +234,16 @@ public class DoorController : MonoBehaviour, ITaskTrigger
     public void OnTaskComplete(bool success)
     {
         isTaskActive = false;
+        
+        if (taskCoroutine != null)
+        {
+            StopCoroutine(taskCoroutine);
+            taskCoroutine = null;
+        }
+
         if (success)
         {
+            isTaskCompleted = true;
             Debug.Log("Door Unlocked by Task!");
             isTaskLocked = false;
 
@@ -216,7 +268,7 @@ public class DoorController : MonoBehaviour, ITaskTrigger
         {
             Debug.Log("Door Task Failed.");
             
-            // Deduct player health
+            // Deduct player health directly
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
             {
@@ -225,12 +277,6 @@ public class DoorController : MonoBehaviour, ITaskTrigger
                 {
                     playerHealth.TakeDamage(1);
                 }
-            }
-
-            // Show failure instruction
-            if (PlayerInstructionUI.Instance != null)
-            {
-                PlayerInstructionUI.Instance.ShowInstruction("Magic Key Insertion Failed! The Door's Defensive Counter-Spell has been Activated!\nBRACE FOR IMPACT!", 3f, true);
             }
 
             // Show instruction again if the player is still in the collider after a delay
