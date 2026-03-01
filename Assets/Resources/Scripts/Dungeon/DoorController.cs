@@ -181,17 +181,24 @@ public class DoorController : MonoBehaviour, ITaskTrigger
         isTaskActive = true;
         isTaskCompleted = false;
 
+        float finalTimeLimit = unlockTimeLimit;
+        DungeonGenerator dungeonGen = FindObjectOfType<DungeonGenerator>();
+        if(dungeonGen != null)
+        {
+            finalTimeLimit *= dungeonGen.GetTaskTimeMultiplier();
+        }
+
         if (BPlusTreeTaskManager.Instance != null)
         {
             BPlusTreeTaskManager.Instance.StartTask(this, BPlusTreeTaskType.Insertion);
         }
 
         float timer = 0f;
-        while (timer < unlockTimeLimit)
+        while (timer < finalTimeLimit)
         {
             if (BPlusTreeTaskManager.Instance != null)
             {
-                BPlusTreeTaskManager.Instance.UpdateTaskTimer(unlockTimeLimit - timer, unlockTimeLimit);
+                BPlusTreeTaskManager.Instance.UpdateTaskTimer(finalTimeLimit - timer, finalTimeLimit);
             }
 
             if (isTaskCompleted)

@@ -291,7 +291,7 @@ public class DungeonGenerator : MonoBehaviour
         return (int)(2 * Mathf.Pow(minChildren, height - 2) * minLeafKeys);
     }
 
-    public float GetChantDurationMultiplier()
+    public float GetTaskTimeMultiplier()
     {
         switch (difficultyMode)
         {
