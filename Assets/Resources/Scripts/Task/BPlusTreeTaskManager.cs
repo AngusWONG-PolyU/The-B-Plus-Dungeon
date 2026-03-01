@@ -96,16 +96,18 @@ public class BPlusTreeTaskManager : MonoBehaviour
         
         if(taskTitleText)
         {
-            switch(taskType)
-            {
-                case BPlusTreeTaskType.Deletion: taskTitleText.text = "Delete the Key to Unravel the Spell!"; break;
-                case BPlusTreeTaskType.Insertion: taskTitleText.text = "Insert the Key to Unlock the Door!"; break;
-            }
+            taskTitleText.gameObject.SetActive(true);
+            taskTitleText.color = Color.black;
+            taskTitleText.text = "";
         }
 
         if(submitButtonText)
         {
-            submitButtonText.text = "Finish Unraveling";
+            switch(taskType)
+            {
+                case BPlusTreeTaskType.Deletion: submitButtonText.text = "Finish Unraveling"; break;
+                case BPlusTreeTaskType.Insertion: submitButtonText.text = "Forge Magic Key"; break;
+            }
         }
 
         _inResultPhase = false;
@@ -682,7 +684,11 @@ public class BPlusTreeTaskManager : MonoBehaviour
 
         if (submitButtonText != null)
         {
-            submitButtonText.text = "Complete Ritual";
+            switch(_currentTaskType)
+            {
+                case BPlusTreeTaskType.Deletion: submitButtonText.text = "Complete Ritual"; break;
+                case BPlusTreeTaskType.Insertion: submitButtonText.text = "Turn the Key"; break;
+            }
         }
 
         if (taskTitleText != null)
