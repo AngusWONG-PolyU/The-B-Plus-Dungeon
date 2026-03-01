@@ -125,7 +125,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
         // Update Tree Order Text
         if(treeOrderText != null)
         {
-            treeOrderText.text = $"Order: <color=#FFD700>{treeOrder}</color>";
+            treeOrderText.text = $"Order: {treeOrder}";
         }
 
         // 2. Create the tree
@@ -169,7 +169,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
             }
             
             string keysStr = string.Join(", ", _targetKeys);
-            if(taskTitleText) taskTitleText.text = $"Delete Key(s) <color=#FFD700>{keysStr}</color> to Break the Spell!";
+            if(taskTitleText) taskTitleText.text = $"Delete Key(s) {keysStr} to Break the Spell!";
         }
         else // Insertion
         {
@@ -185,7 +185,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
             }
             
             string keysStr = string.Join(", ", _targetKeys);
-            if(taskTitleText) taskTitleText.text = $"Insert Key(s) <color=#FFD700>{keysStr}</color> to Unlock the Door!";
+            if(taskTitleText) taskTitleText.text = $"Insert Key(s) {keysStr} to Unlock the Door!";
             
             // Spawn keys in buffer area
             if (bufferArea != null && treeVisualizer != null && treeVisualizer.nodePrefab != null)
