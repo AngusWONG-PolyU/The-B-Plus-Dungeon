@@ -7,6 +7,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
     private bool isTaskCompleted = false;
 
     [Header("Stats")]
+    public Sprite enemyIcon;
     public bool isBoss = false;
     public int maxHealth = 3;
     public float detectionRange = 10f;
@@ -31,7 +32,6 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
     
     [Header("References")]
     public Transform player;
-    public EnemyHealthBar healthBar;
     public GameObject shieldObject;
     private DungeonRoomController roomController;
     
@@ -58,11 +58,6 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         
         // Initialize Shield logic
         UpdateShield(true);
-        
-        if (healthBar != null)
-        {
-            healthBar.UpdateHealthBar(currentHealth, maxHealth);
-        }
         
         if (player == null)
         {
@@ -144,6 +139,11 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
             if (firstEncounter)
             {
                 firstEncounter = false;
+                if (EnemyHealthBar.Instance != null)
+                {
+                    string displayName = isBoss ? "Boss" : "Enemy";
+                    EnemyHealthBar.Instance.Setup(displayName, enemyIcon, currentHealth, maxHealth);
+                }
                 StartLockSequence();
             }
             else if (!isAttacking && !isLocked && !isChanting)
@@ -435,9 +435,9 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         
         currentHealth -= damage;
         
-        if (healthBar != null)
+        if (EnemyHealthBar.Instance != null)
         {
-            healthBar.UpdateHealthBar(currentHealth, maxHealth);
+            EnemyHealthBar.Instance.UpdateHealthBar(currentHealth, maxHealth);
         }
         
         if (currentHealth <= 0)
@@ -468,11 +468,6 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         currentHealth = maxHealth;
         
         UpdateShield(true); // Reset Shield
-
-        if (healthBar != null)
-        {
-            healthBar.UpdateHealthBar(currentHealth, maxHealth);
-        }
         
         isAttacking = false;
         firstEncounter = true;
@@ -507,10 +502,15 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         isDead = true;
         UpdateShield(false); // Remove Shield
         
+        if (EnemyHealthBar.Instance != null)
+        {
+            EnemyHealthBar.Instance.Hide();
+        }
+        
         if (PlayerInstructionUI.Instance != null)
         {
             string defeatMessage = isBoss ? "Boss Defeated!" : "Enemy Defeated!";
-            PlayerInstructionUI.Instance.ShowInstruction(defeatMessage, 1f);
+            PlayerInstructionUI.Instance.ShowInstruction(defeatMessage, 3f);
         }
 
         // Unlock player and destroy magic if active
