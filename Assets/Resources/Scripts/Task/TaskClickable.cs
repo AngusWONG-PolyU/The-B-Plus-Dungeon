@@ -15,6 +15,8 @@ public class TaskClickable : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (BPlusTreeTaskManager.Instance != null && BPlusTreeTaskManager.Instance.IsInResultPhase) return;
+
         if (eventData.button == PointerEventData.InputButton.Right)
         {
             // Right Click Detected

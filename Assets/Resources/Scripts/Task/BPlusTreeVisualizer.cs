@@ -18,6 +18,7 @@ public class BPlusTreeVisualizer : MonoBehaviour
     public float nodePadding = 40f; // Gap between nodes
 
     private Dictionary<BPlusTreeNode<int, string>, RectTransform> _nodeMap;
+    public Dictionary<BPlusTreeNode<int, string>, RectTransform> NodeMap => _nodeMap;
 
     public void RenderTree(BPlusTree<int, string> tree)
     {

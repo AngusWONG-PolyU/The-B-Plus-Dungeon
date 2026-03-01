@@ -220,7 +220,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         // Inform player to Left Click
         if (PlayerInstructionUI.Instance != null)
         {
-            PlayerInstructionUI.Instance.ShowInstruction("Left Click Anywhere to Break the Spell!");
+            PlayerInstructionUI.Instance.ShowInstruction("Left Click Anywhere to Unravel the Spell!");
         }
 
         isLocked = true; // Now waiting for player input

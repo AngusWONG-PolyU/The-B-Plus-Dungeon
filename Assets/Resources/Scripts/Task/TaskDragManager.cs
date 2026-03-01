@@ -608,6 +608,52 @@ public class TaskDragManager : MonoBehaviour
     // Move Key Logic
     private void PerformMoveKey(BPlusTreeVisualNode source, BPlusTreeVisualNode target, int key)
     {
+        // For internal nodes migrating keys between siblings, we must also transfer a child pointer
+        if (!source.CoreNode.IsLeaf && !target.CoreNode.IsLeaf && source.CoreNode.Parent == target.CoreNode.Parent && source.CoreNode.Parent != null)
+        {
+            var parent = source.CoreNode.Parent;
+            int sourceIndex = parent.Children.IndexOf(source.CoreNode);
+            int targetIndex = parent.Children.IndexOf(target.CoreNode);
+            
+            if (sourceIndex == targetIndex + 1) // Source is right, Target is left
+            {
+                // Moving FIRST key and FIRST child to target
+                if (source.CoreNode.Children.Count > 0)
+                {
+                    var childToMove = source.CoreNode.Children[0];
+                    source.CoreNode.Children.RemoveAt(0);
+                    target.CoreNode.Children.Add(childToMove);
+                    childToMove.Parent = target.CoreNode;
+                    
+                    // Re-sort target children based on their minimum keys
+                    target.CoreNode.Children.Sort((a, b) => {
+                        int keyA = BPlusTreeTaskManager.Instance.GetSubtreeMin(a);
+                        int keyB = BPlusTreeTaskManager.Instance.GetSubtreeMin(b);
+                        return keyA.CompareTo(keyB);
+                    });
+                }
+            }
+            else if (sourceIndex == targetIndex - 1) // Source is left, Target is right
+            {
+                // Moving LAST key and LAST child to target
+                if (source.CoreNode.Children.Count > 0)
+                {
+                    var childToMove = source.CoreNode.Children[source.CoreNode.Children.Count - 1];
+                    source.CoreNode.Children.RemoveAt(source.CoreNode.Children.Count - 1);
+                    // Add it as first child of target, then sort
+                    target.CoreNode.Children.Insert(0, childToMove);
+                    childToMove.Parent = target.CoreNode;
+                    
+                    // Re-sort target children based on their minimum keys
+                    target.CoreNode.Children.Sort((a, b) => {
+                        int keyA = BPlusTreeTaskManager.Instance.GetSubtreeMin(a);
+                        int keyB = BPlusTreeTaskManager.Instance.GetSubtreeMin(b);
+                        return keyA.CompareTo(keyB);
+                    });
+                }
+            }
+        }
+
         // 1. Remove from source
         RemoveKeyFromNode(source, key);
 

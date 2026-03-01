@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-public class BPlusTreeVisualNode : MonoBehaviour, IPointerClickHandler
+public class BPlusTreeVisualNode : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("References")]
     public Transform keyContainer;
@@ -17,15 +17,55 @@ public class BPlusTreeVisualNode : MonoBehaviour, IPointerClickHandler
     
     // Track highlight state for interactivity checks
     public bool IsHighlighted { get; private set; }
+    
+    private string _errorMessage = "";
+    private bool _inResultPhase = false;
 
     public void OnPointerClick(PointerEventData eventData)
     {
         if (eventData.button == PointerEventData.InputButton.Right)
         {
-            if (TaskContextMenu.Instance != null)
+            if (TaskContextMenu.Instance != null && !_inResultPhase)
             {
                 TaskContextMenu.Instance.ShowNodeMenu(this, eventData.position);
             }
+        }
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (_inResultPhase && !string.IsNullOrEmpty(_errorMessage) && TaskTooltip.Instance != null)
+        {
+            TaskTooltip.Instance.ShowTooltip(_errorMessage);
+        }
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (_inResultPhase && TaskTooltip.Instance != null)
+        {
+            TaskTooltip.Instance.HideTooltip();
+        }
+    }
+
+    public void SetResultHighlight(bool isCorrect, string errorMsg)
+    {
+        _inResultPhase = true;
+        _errorMessage = errorMsg;
+        IsHighlighted = !isCorrect;
+
+        Image img = GetComponent<Image>();
+        if (img != null)
+        {
+            // Green for correct, Red for error
+            img.color = isCorrect ? new Color(0.5f, 1f, 0.5f, 0.8f) : new Color(1f, 0.5f, 0.5f, 0.8f);
+        }
+
+        Outline outline = GetComponent<Outline>();
+        if (outline != null)
+        {
+            outline.effectColor = isCorrect ? Color.green : Color.red;
+            outline.effectDistance = new Vector2(3, -3);
         }
     }
 
