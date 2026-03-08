@@ -24,6 +24,15 @@ public class DungeonPortalController : MonoBehaviour
     
     private GameObject playerInRange;
     
+    void OnDisable()
+    {
+        playerInRange = null;
+        if (promptText != null)
+        {
+            promptText.gameObject.SetActive(false);
+        }
+    }
+
     void Start()
     {
         character = player.transform.Find("Wizard");
