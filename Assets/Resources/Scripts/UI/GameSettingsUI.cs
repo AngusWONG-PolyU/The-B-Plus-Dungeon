@@ -66,6 +66,12 @@ public class GameSettingsUI : MonoBehaviour
     {
         ToggleSettings();
         
+        // Hide any lingering instructions
+        if (PlayerInstructionUI.Instance != null)
+        {
+            PlayerInstructionUI.Instance.HideInstruction();
+        }
+
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {

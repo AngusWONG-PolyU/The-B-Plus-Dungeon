@@ -53,7 +53,10 @@ public class PlayerHealth : MonoBehaviour
         currentHearts -= damage;
         Debug.Log($"Player took {damage} damage. Current Hearts: {currentHearts}");
 
-        if (animator != null) animator.SetTrigger("Hurt");
+        if (damage > 0 && animator != null) 
+        {
+            animator.SetTrigger("Hurt");
+        }
 
         if (currentHearts <= 0)
         {
@@ -100,7 +103,12 @@ public class PlayerHealth : MonoBehaviour
         }
         
         // Reset Animation
-        if (animator != null) animator.Play("Idle"); 
+        if (animator != null) 
+        {
+            animator.Play("Idle"); 
+            animator.ResetTrigger("Hurt");
+            animator.ResetTrigger("Die");
+        }
 
         Debug.Log("Player Health Reset to Max.");
         OnHealthChanged?.Invoke(currentHearts);

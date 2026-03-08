@@ -155,8 +155,15 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         }
 
         // Handle Click when Locked to start Chant
-        if (isLocked && Input.GetMouseButtonDown(0))
+        if (isLocked && Input.GetMouseButtonDown(0) && Time.timeScale > 0f)
         {
+            // Avoid triggering the chant if clicking on a UI element (like closing settings)
+            if (UnityEngine.EventSystems.EventSystem.current != null && 
+                UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) 
+            {
+                return;
+            }
+
             if (PlayerInstructionUI.Instance != null)
             {
                 PlayerInstructionUI.Instance.HideInstruction();

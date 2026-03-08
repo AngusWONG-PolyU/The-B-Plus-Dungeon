@@ -161,7 +161,7 @@ public class DoorController : MonoBehaviour, ITaskTrigger
 
     private void Update()
     {
-        if (isPlayerInCollider && isTaskLocked && !isOpen && !isTaskActive)
+        if (isPlayerInCollider && isTaskLocked && !isOpen && !isTaskActive && Time.timeScale > 0f)
         {
             if (Input.GetKeyDown(KeyCode.E))
             {
