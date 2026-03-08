@@ -72,8 +72,13 @@ public class BPlusTreeTaskManager : MonoBehaviour
         if(confirmationPanel) confirmationPanel.SetActive(false);
     }
 
-    public void StartTask(ITaskTrigger trigger, BPlusTreeTaskType taskType)
+    public void StartTask(ITaskTrigger trigger, BPlusTreeTaskType requestedTaskType)
     {
+        BPlusTreeTaskType taskType = requestedTaskType;
+        int taskMode = PlayerPrefs.GetInt("TaskMode", 0);
+        if (taskMode == 1) taskType = BPlusTreeTaskType.Insertion;
+        else if (taskMode == 2) taskType = BPlusTreeTaskType.Deletion;
+
         _currentTrigger = trigger;
         _currentTaskType = taskType;
         
@@ -103,10 +108,16 @@ public class BPlusTreeTaskManager : MonoBehaviour
 
         if(submitButtonText)
         {
+            string actionTarget = _currentTrigger != null && _currentTrigger.GetType().Name == "DoorController" ? "Door" : "Spell";
+
             switch(taskType)
             {
-                case BPlusTreeTaskType.Deletion: submitButtonText.text = "Finish Unraveling"; break;
-                case BPlusTreeTaskType.Insertion: submitButtonText.text = "Forge Magic Key"; break;
+                case BPlusTreeTaskType.Deletion: 
+                    submitButtonText.text = actionTarget == "Door" ? "Delete Key" : "Finish Unraveling"; 
+                    break;
+                case BPlusTreeTaskType.Insertion: 
+                    submitButtonText.text = actionTarget == "Door" ? "Forge Magic Key" : "Insert Key"; 
+                    break;
             }
         }
 
@@ -183,7 +194,11 @@ public class BPlusTreeTaskManager : MonoBehaviour
             }
             
             string keysStr = string.Join(", ", _targetKeys);
-            if(taskTitleText) taskTitleText.text = $"Delete Key(s) {keysStr} to Unravel the Spell!";
+            if(taskTitleText) 
+            {
+                string targetDsc = _currentTrigger != null && _currentTrigger.GetType().Name == "DoorController" ? "Unlock the Door!" : "Unravel the Spell!";
+                taskTitleText.text = $"Delete Key(s) {keysStr} to {targetDsc}";
+            }
         }
         else // Insertion
         {
@@ -199,7 +214,11 @@ public class BPlusTreeTaskManager : MonoBehaviour
             }
             
             string keysStr = string.Join(", ", _targetKeys);
-            if(taskTitleText) taskTitleText.text = $"Insert Key(s) {keysStr} to Unlock the Door!";
+            if(taskTitleText)
+            {
+                string targetDsc = _currentTrigger != null && _currentTrigger.GetType().Name == "DoorController" ? "Unlock the Door!" : "Counter the Spell!";
+                taskTitleText.text = $"Insert Key(s) {keysStr} to {targetDsc}";
+            }
             
             // Spawn keys in buffer area
             if (bufferArea != null && treeVisualizer != null && treeVisualizer.nodePrefab != null)
@@ -254,9 +273,17 @@ public class BPlusTreeTaskManager : MonoBehaviour
     {
         if(timerText != null) 
         {
-            timerText.text = $"Time: {remainingTime:F1}s";
-            if(remainingTime <= totalDuration / 2f) timerText.color = Color.red;
-            else timerText.color = Color.black;
+            if (totalDuration == float.MaxValue)
+            {
+                timerText.text = "Time: \u221E"; // Infinity symbol
+                timerText.color = Color.black;
+            }
+            else
+            {
+                timerText.text = $"Time: {remainingTime:F1}s";
+                if(remainingTime <= totalDuration / 2f) timerText.color = Color.red;
+                else timerText.color = Color.black;
+            }
         }
     }
 
@@ -684,10 +711,16 @@ public class BPlusTreeTaskManager : MonoBehaviour
 
         if (submitButtonText != null)
         {
+            string actionTarget = _currentTrigger != null && _currentTrigger.GetType().Name == "DoorController" ? "Door" : "Spell";
+
             switch(_currentTaskType)
             {
-                case BPlusTreeTaskType.Deletion: submitButtonText.text = "Complete Ritual"; break;
-                case BPlusTreeTaskType.Insertion: submitButtonText.text = "Turn the Key"; break;
+                case BPlusTreeTaskType.Deletion: 
+                    submitButtonText.text = actionTarget == "Door" ? "Break Lock" : "Complete Ritual"; 
+                    break;
+                case BPlusTreeTaskType.Insertion: 
+                    submitButtonText.text = actionTarget == "Door" ? "Turn the Key" : "Release Magic"; 
+                    break;
             }
         }
 

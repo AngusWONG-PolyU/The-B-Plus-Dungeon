@@ -290,19 +290,4 @@ public class DungeonGenerator : MonoBehaviour
 
         return (int)(2 * Mathf.Pow(minChildren, height - 2) * minLeafKeys);
     }
-
-    public float GetTaskTimeMultiplier()
-    {
-        switch (difficultyMode)
-        {
-            case DifficultyMode.Tutorial:
-                return 1.5f; // Slower for Tutorial
-            case DifficultyMode.Easy:
-            case DifficultyMode.Standard:
-            case DifficultyMode.Hard:
-                return 1.0f; // Normal time for all standard modes
-            default:
-                return 1.0f;
-        }
-    }
 }

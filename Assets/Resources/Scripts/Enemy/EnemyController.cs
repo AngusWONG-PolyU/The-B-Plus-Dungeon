@@ -220,7 +220,9 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         // Inform player to Left Click
         if (PlayerInstructionUI.Instance != null)
         {
-            PlayerInstructionUI.Instance.ShowInstruction("Left Click Anywhere to Unravel the Spell!");
+            int taskMode = PlayerPrefs.GetInt("TaskMode", 0);
+            string actionWord = taskMode == 1 ? "Disrupt" : "Unravel";
+            PlayerInstructionUI.Instance.ShowInstruction($"Left Click Anywhere to {actionWord} the Spell!");
         }
 
         isLocked = true; // Now waiting for player input
@@ -235,6 +237,10 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         criticalVulnerable = false;
         isTaskCompleted = false;
         forceFinishChant = false;
+
+        int timeLimitMode = PlayerPrefs.GetInt("TimeLimitMode", 0);
+        if (timeLimitMode == 1) chantDuration = 60f;
+        else if (timeLimitMode == 2) chantDuration = float.MaxValue;
 
         if (animator != null) animator.SetBool("isCasting", true);
 
@@ -274,7 +280,9 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
                 
                 isFrozen = true;
                 UpdateShield(false); // Disable Shield
-                if (timer < chantDuration / 2f)
+                
+                float referenceDuration = chantDuration == float.MaxValue ? baseChantDuration : chantDuration;
+                if (timer < referenceDuration / 2f)
                 {
                     criticalVulnerable = true;
                     Debug.Log("Critical Vulnerability! Player unlocked before chant is finished halfway.");
@@ -452,9 +460,15 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         }
     }
 
-    public void SetChantDurationMultiplier(float multiplier)
+    public void ApplyTimeLimitSetting()
     {
-        chantDuration = baseChantDuration * multiplier;
+        int timeLimitMode = PlayerPrefs.GetInt("TimeLimitMode", 0);
+        if (timeLimitMode == 1) 
+            chantDuration = 60f;
+        else if (timeLimitMode == 2) 
+            chantDuration = float.MaxValue;
+        else 
+            chantDuration = baseChantDuration;
     }
 
     public void ForceFinishChant()
@@ -464,6 +478,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
 
     public void ResetEnemy()
     {
+        this.enabled = true;
         isDead = false;
         currentHealth = maxHealth;
         
@@ -554,6 +569,26 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         {
             Destroy(activeLockMagic);
         }
+        
+        // Hide the enemy health bar
+        if (EnemyHealthBar.Instance != null)
+        {
+            EnemyHealthBar.Instance.Hide();
+        }
+
+        StopAllCoroutines();
+        
+        // Reset Animation
+        if (animator != null)
+        {
+            animator.Rebind();
+            animator.Update(0f);
+            animator.SetBool("isFrozen", false);
+            animator.SetBool("isCasting", false);
+            animator.speed = 1f;
+        }
+        
+        this.enabled = false;
     }
 
     // Shield Helper

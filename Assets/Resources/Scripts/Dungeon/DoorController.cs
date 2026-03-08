@@ -182,11 +182,10 @@ public class DoorController : MonoBehaviour, ITaskTrigger
         isTaskCompleted = false;
 
         float finalTimeLimit = unlockTimeLimit;
-        DungeonGenerator dungeonGen = FindObjectOfType<DungeonGenerator>();
-        if(dungeonGen != null)
-        {
-            finalTimeLimit *= dungeonGen.GetTaskTimeMultiplier();
-        }
+        
+        int timeLimitMode = PlayerPrefs.GetInt("TimeLimitMode", 0);
+        if (timeLimitMode == 1) finalTimeLimit = 60f;
+        else if (timeLimitMode == 2) finalTimeLimit = float.MaxValue;
 
         if (BPlusTreeTaskManager.Instance != null)
         {

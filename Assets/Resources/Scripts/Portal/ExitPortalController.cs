@@ -99,17 +99,25 @@ public class ExitPortalController : MonoBehaviour
     {
         if (playerInRange != null && teleportDestination != null)
         {
-            StartCoroutine(TeleportPlayerWithEffect());
+            StartCoroutine(TeleportPlayerWithEffect(playerInRange));
         }
         else
         {
             Debug.LogWarning($"Cannot teleport: playerInRange={playerInRange}, teleportDestination={teleportDestination}");
         }
     }
-    
-    IEnumerator TeleportPlayerWithEffect()
+
+    public void ForceExit(GameObject playerObject)
     {
-        if (playerInRange == null || teleportDestination == null)
+        if (playerObject != null && teleportDestination != null)
+        {
+            StartCoroutine(TeleportPlayerWithEffect(playerObject));
+        }
+    }
+    
+    IEnumerator TeleportPlayerWithEffect(GameObject targetPlayer)
+    {
+        if (targetPlayer == null || teleportDestination == null)
         {
             yield break;
         }
@@ -117,8 +125,8 @@ public class ExitPortalController : MonoBehaviour
         HideInteractionPrompt();
         
         // Stop player movement and disable NavMeshAgent
-        CharacterMovement playerMovement = playerInRange.GetComponent<CharacterMovement>();
-        UnityEngine.AI.NavMeshAgent navAgent = playerInRange.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        CharacterMovement playerMovement = targetPlayer.GetComponent<CharacterMovement>();
+        UnityEngine.AI.NavMeshAgent navAgent = targetPlayer.GetComponent<UnityEngine.AI.NavMeshAgent>();
         
         if (playerMovement != null)
         {
@@ -143,7 +151,7 @@ public class ExitPortalController : MonoBehaviour
         
         // Teleport player
         Vector3 finalPosition = teleportDestination.position + teleportOffset;
-        playerInRange.transform.position = finalPosition;
+        targetPlayer.transform.position = finalPosition;
         
         // Disable Dungeon Mode (UI + Skills)
         if (dungeonGenerator != null)
@@ -216,7 +224,10 @@ public class ExitPortalController : MonoBehaviour
             playerTeleportEffect.gameObject.SetActive(false);
         }
         
-        playerInRange = null;
+        if (playerInRange == targetPlayer) 
+        {
+            playerInRange = null;
+        }
         
         // Clear minimap
         if (dungeonMinimap != null)

@@ -183,7 +183,7 @@ public class DungeonRoomController : MonoBehaviour
 
                 if (dungeonManager != null && dungeonManager.dungeonGenerator != null)
                 {
-                    ec.SetChantDurationMultiplier(dungeonManager.dungeonGenerator.GetTaskTimeMultiplier());
+                    ec.ApplyTimeLimitSetting();
                     Debug.Log($"[DungeonRoomController] Boss chant duration set to {ec.chantDuration}");
                 }
             }
@@ -225,7 +225,7 @@ public class DungeonRoomController : MonoBehaviour
 
                 if (dungeonManager != null && dungeonManager.dungeonGenerator != null)
                 {
-                    ec.SetChantDurationMultiplier(dungeonManager.dungeonGenerator.GetTaskTimeMultiplier());
+                    ec.ApplyTimeLimitSetting();
                     Debug.Log($"[DungeonRoomController] Enemy chant duration set to {ec.chantDuration}");
                 }
             }
