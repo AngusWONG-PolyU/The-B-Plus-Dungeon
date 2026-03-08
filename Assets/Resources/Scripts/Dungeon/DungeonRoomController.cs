@@ -180,12 +180,6 @@ public class DungeonRoomController : MonoBehaviour
                 ec.isBoss = true;
                 ec.maxHealth = 5;
                 ec.ResetEnemy();
-
-                if (dungeonManager != null && dungeonManager.dungeonGenerator != null)
-                {
-                    ec.ApplyTimeLimitSetting();
-                    Debug.Log($"[DungeonRoomController] Boss chant duration set to {ec.chantDuration}");
-                }
             }
 
             activeEnemy = boss;
@@ -222,12 +216,6 @@ public class DungeonRoomController : MonoBehaviour
                 ec.isBoss = false;
                 ec.maxHealth = 3;
                 ec.ResetEnemy();
-
-                if (dungeonManager != null && dungeonManager.dungeonGenerator != null)
-                {
-                    ec.ApplyTimeLimitSetting();
-                    Debug.Log($"[DungeonRoomController] Enemy chant duration set to {ec.chantDuration}");
-                }
             }
             
             activeEnemy = selectedEnemy;

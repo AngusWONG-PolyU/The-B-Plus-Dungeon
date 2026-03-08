@@ -43,12 +43,9 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
     private GameObject activeLockMagic;
     private PlayerHealth playerHealth;
 
-    private float baseChantDuration; // Store original duration
-
     private void Awake()
     {
         if (isBoss) maxHealth = 5;
-        baseChantDuration = chantDuration; // Initialize base duration once
     }
 
     void Start()
@@ -238,10 +235,10 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         isTaskCompleted = false;
         forceFinishChant = false;
 
+        float finalChantDuration = chantDuration;
         int timeLimitMode = PlayerPrefs.GetInt("TimeLimitMode", 0);
-        if (timeLimitMode == 1) chantDuration = 60f;
-        else if (timeLimitMode == 2) chantDuration = float.MaxValue;
-        else chantDuration = baseChantDuration;
+        if (timeLimitMode == 1) finalChantDuration = 60f;
+        else if (timeLimitMode == 2) finalChantDuration = float.MaxValue;
 
         if (animator != null) animator.SetBool("isCasting", true);
 
@@ -253,7 +250,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         
         // Chant duration with check for player unlock
         float timer = 0f;
-        while (timer < chantDuration)
+        while (timer < finalChantDuration)
         {
             if (forceFinishChant)
             {
@@ -263,7 +260,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
             // Update Task Timer UI
             if (BPlusTreeTaskManager.Instance != null)
             {
-                BPlusTreeTaskManager.Instance.UpdateTaskTimer(chantDuration - timer, chantDuration);
+                BPlusTreeTaskManager.Instance.UpdateTaskTimer(finalChantDuration - timer, finalChantDuration);
             }
 
             // If the player completes the task successfully
@@ -282,7 +279,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
                 isFrozen = true;
                 UpdateShield(false); // Disable Shield
                 
-                float referenceDuration = chantDuration == float.MaxValue ? baseChantDuration : chantDuration;
+                float referenceDuration = finalChantDuration == float.MaxValue ? chantDuration : finalChantDuration;
                 if (timer < referenceDuration / 2f)
                 {
                     criticalVulnerable = true;
@@ -459,17 +456,6 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         {
             if (animator != null) animator.SetTrigger("takeHit");
         }
-    }
-
-    public void ApplyTimeLimitSetting()
-    {
-        int timeLimitMode = PlayerPrefs.GetInt("TimeLimitMode", 0);
-        if (timeLimitMode == 1) 
-            chantDuration = 60f;
-        else if (timeLimitMode == 2) 
-            chantDuration = float.MaxValue;
-        else 
-            chantDuration = baseChantDuration;
     }
 
     public void ForceFinishChant()

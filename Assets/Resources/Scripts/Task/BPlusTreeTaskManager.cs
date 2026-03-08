@@ -33,6 +33,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
     public TextMeshProUGUI timerText;
     public TextMeshProUGUI treeOrderText;
     public TextMeshProUGUI submitButtonText;
+    public Button resetButton;
 
     [Header("Confirmation UI")]
     public GameObject confirmationPanel;
@@ -293,6 +294,68 @@ public class BPlusTreeTaskManager : MonoBehaviour
         ValidateSubmitButtonState();
     }
     
+    public void ResetTask()
+    {
+        if (_initialKeys == null || _currentTree == null) return;
+        
+        // 1. Recreate the tree from _initialKeys
+        _currentTree = new BPlusTree<int, string>(treeOrder);
+        foreach (int key in _initialKeys)
+        {
+            _currentTree.Insert(key, "val-" + key);
+        }
+
+        // 2. Clear and refill buffer area if insertion task
+        if (_currentTaskType == BPlusTreeTaskType.Insertion)
+        {
+            if (bufferArea != null && treeVisualizer != null && treeVisualizer.nodePrefab != null)
+            {
+                // Clear existing keys in buffer area
+                foreach (Transform child in bufferArea.transform)
+                {
+                    Destroy(child.gameObject);
+                }
+                
+                GameObject keyPrefab = treeVisualizer.nodePrefab.GetComponent<BPlusTreeVisualNode>().keyPrefab;
+                if (keyPrefab != null)
+                {
+                    // Instantiate keys in reverse order so first-target appears on top
+                    for (int i = _targetKeys.Count - 1; i >= 0; i--)
+                    {
+                        int key = _targetKeys[i];
+                        GameObject k = Instantiate(keyPrefab, bufferArea.transform);
+                        TextMeshProUGUI t = k.GetComponentInChildren<TextMeshProUGUI>();
+                        if(t) t.text = key.ToString();
+
+                        // Ensure square shape via LayoutElement if not present
+                        LayoutElement le = k.GetComponent<LayoutElement>();
+                        if (le == null) le = k.AddComponent<LayoutElement>();
+
+                        if (le.preferredWidth <= 0) le.preferredWidth = 50f;
+                        if (le.preferredHeight <= 0) le.preferredHeight = 50f;
+                        le.minWidth = 50f;
+                        le.minHeight = 50f;
+
+                        // Highlight the key for insertion
+                        Image img = k.GetComponent<Image>();
+                        if (img != null)
+                        {
+                            img.color = new Color(0.5f, 0.8f, 0.5f, 1f); // Darker green highlight
+                        }
+
+                        Outline outline = k.GetComponent<Outline>();
+                        if (outline == null) outline = k.AddComponent<Outline>();
+                        outline.effectColor = new Color(0.1f, 0.4f, 0.1f, 1f); // Dark green outline
+                        outline.effectDistance = new Vector2(3, -3);
+                    }
+                }
+            }
+        }
+
+        // 3. Visualizer
+        RefreshTree();
+    }
+
     private void ValidateSubmitButtonState()
     {
         if (submitButtonText == null) return;
@@ -302,14 +365,18 @@ public class BPlusTreeTaskManager : MonoBehaviour
         if (_inResultPhase)
         {
             submitBtn.interactable = true;
+            if (resetButton != null) resetButton.interactable = false;
             return;
         }
 
         if (_currentTree == null)
         {
             submitBtn.interactable = false;
+            if (resetButton != null) resetButton.interactable = false;
             return;
         }
+        
+        if (resetButton != null) resetButton.interactable = true;
 
         List<int> currentKeys = new List<int>();
         CollectKeys(_currentTree.Root, currentKeys);
