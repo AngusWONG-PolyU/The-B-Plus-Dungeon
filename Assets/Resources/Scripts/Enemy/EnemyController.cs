@@ -241,6 +241,7 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         int timeLimitMode = PlayerPrefs.GetInt("TimeLimitMode", 0);
         if (timeLimitMode == 1) chantDuration = 60f;
         else if (timeLimitMode == 2) chantDuration = float.MaxValue;
+        else chantDuration = baseChantDuration;
 
         if (animator != null) animator.SetBool("isCasting", true);
 
