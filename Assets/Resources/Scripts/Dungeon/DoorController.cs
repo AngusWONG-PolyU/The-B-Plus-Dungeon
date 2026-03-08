@@ -221,9 +221,11 @@ public class DoorController : MonoBehaviour, ITaskTrigger
         {
             BPlusTreeTaskManager.Instance.CloseTask(false);
         }
-
-        // Simulate failure to trigger the -1HP logic in OnTaskComplete
-        OnTaskComplete(false);
+        else
+        {
+            // Simulate failure to trigger the -1HP logic in OnTaskComplete
+            OnTaskComplete(false);
+        }
     }
 
     public void EnableTaskLock()
