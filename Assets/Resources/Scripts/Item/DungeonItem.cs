@@ -8,29 +8,8 @@ public abstract class DungeonItem : MonoBehaviour
     public string itemName;
     public bool isOneTimeUse = false; // If true, appears only once per run
 
-    [Header("InteractionUI")]
-    public TMPro.TMP_Text promptText;
-
     private GameObject playerInRange;
     
-    private void Start()
-    {
-        InitializePrompt();
-    }
-
-    private void OnEnable()
-    {
-        InitializePrompt();
-    }
-
-    private void InitializePrompt()
-    {
-        if (promptText != null)
-        {
-            promptText.gameObject.SetActive(false);
-        }
-    }
-
     private void Update()
     {
         if (playerInRange != null && Input.GetKeyDown(KeyCode.E))
@@ -44,10 +23,9 @@ public abstract class DungeonItem : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             playerInRange = other.gameObject;
-            if (promptText != null)
+            if (PlayerInstructionUI.Instance != null)
             {
-                promptText.gameObject.SetActive(true);
-                promptText.text = $"Press E to get {itemName}";
+                PlayerInstructionUI.Instance.ShowInstruction($"Press E to get {itemName}!");
             }
         }
     }
@@ -57,9 +35,9 @@ public abstract class DungeonItem : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             playerInRange = null;
-            if (promptText != null)
+            if (PlayerInstructionUI.Instance != null)
             {
-                promptText.gameObject.SetActive(false);
+                PlayerInstructionUI.Instance.HideInstruction();
             }
         }
     }
@@ -69,9 +47,9 @@ public abstract class DungeonItem : MonoBehaviour
         ApplyEffect(player);
         
         // Hide text before disabling
-        if (promptText != null)
+        if (PlayerInstructionUI.Instance != null)
         {
-            promptText.gameObject.SetActive(false);
+            PlayerInstructionUI.Instance.HideInstruction();
         }
             
         gameObject.SetActive(false);
