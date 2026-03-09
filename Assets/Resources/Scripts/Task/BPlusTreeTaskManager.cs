@@ -36,7 +36,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
     public Button resetButton;
 
     [Header("Confirmation UI")]
-    public GameObject confirmationPanel;
+    public ConfirmationUI confirmationUI;
     
     [Header("Game Settings")]
     public int treeOrder = 3; // Default fallback
@@ -70,7 +70,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
         
         if(taskCanvas) taskCanvas.SetActive(false);
         if(bufferArea) bufferArea.SetActive(false);
-        if(confirmationPanel) confirmationPanel.SetActive(false);
+        if(confirmationUI) confirmationUI.gameObject.SetActive(false);
     }
 
     public void StartTask(ITaskTrigger trigger, BPlusTreeTaskType requestedTaskType)
@@ -747,9 +747,14 @@ public class BPlusTreeTaskManager : MonoBehaviour
         // Pause time while confirming
         Time.timeScale = 0f;
 
-        if (confirmationPanel != null)
+        if (confirmationUI != null)
         {
-            confirmationPanel.SetActive(true);
+            confirmationUI.ShowConfirmation(
+                "Submit Task",
+                "Are you sure you want to submit your B+ Tree?",
+                ConfirmSubmit,
+                CancelSubmit
+            );
         }
         else
         {
@@ -761,7 +766,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
     public void ConfirmSubmit()
     {
         // Hide confirmation panel
-        if (confirmationPanel != null) confirmationPanel.SetActive(false);
+        if (confirmationUI != null) confirmationUI.gameObject.SetActive(false);
 
         // Hide any open context menus so they don't linger during result phase
         if (TaskContextMenu.Instance != null)
@@ -812,8 +817,8 @@ public class BPlusTreeTaskManager : MonoBehaviour
 
     public void CancelSubmit()
     {
-        if (confirmationPanel != null) 
-            confirmationPanel.SetActive(false);
+        if (confirmationUI != null) 
+            confirmationUI.gameObject.SetActive(false);
         
         Time.timeScale = 1f; // Restore time if cancelled
     }

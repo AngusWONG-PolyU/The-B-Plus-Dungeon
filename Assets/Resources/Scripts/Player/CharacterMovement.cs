@@ -72,7 +72,7 @@ public class CharacterMovement : MonoBehaviour
         }
 
         // Check for left mouse button click
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && Time.timeScale > 0f) // Ignore input when paused/confirming
         {
             // Prevent movement if clicking on UI
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;

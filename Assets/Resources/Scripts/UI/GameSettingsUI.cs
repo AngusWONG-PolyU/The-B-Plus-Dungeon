@@ -12,6 +12,7 @@ public class GameSettingsUI : MonoBehaviour
     [SerializeField] private Button returnToLobbyButton;
     [SerializeField] private Button closeButton;
     [SerializeField] private GameObject settingsPanel;
+    [SerializeField] private ConfirmationUI confirmationUI;
 
     private void Start()
     {
@@ -34,7 +35,20 @@ public class GameSettingsUI : MonoBehaviour
 
         if (returnToLobbyButton != null)
         {
-            returnToLobbyButton.onClick.AddListener(ReturnToLobby);
+            returnToLobbyButton.onClick.AddListener(() => {
+                if (confirmationUI != null)
+                {
+                    confirmationUI.ShowConfirmation(
+                        "Return to Lobby",
+                        "Are you sure you want to return to the lobby? All unsaved progress will be lost.",
+                        () => ReturnToLobby()
+                    );
+                }
+                else
+                {
+                    ReturnToLobby();
+                }
+            });
         }
 
         if (closeButton != null)

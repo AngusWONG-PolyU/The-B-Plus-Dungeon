@@ -144,7 +144,7 @@ public class PlayerSkillController : MonoBehaviour
 
     void HandleInput()
     {
-        if (!isSystemActive)
+        if (!isSystemActive || Time.timeScale == 0f) // Ignore input when paused/confirming
         {
             if (isAiming) CancelAiming();
             return;

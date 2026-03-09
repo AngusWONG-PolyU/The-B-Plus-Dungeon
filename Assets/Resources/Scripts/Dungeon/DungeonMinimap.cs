@@ -120,7 +120,8 @@ public class DungeonMinimap : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.M))
+        // Cancel map toggle if time is paused (e.g., Settings or Confirmation Panel is open)
+        if (Input.GetKeyDown(KeyCode.M) && Time.timeScale > 0f)
         {
             isFullMapOpen = !isFullMapOpen;
             minimapToggle.SetIsOnWithoutNotify(true);
