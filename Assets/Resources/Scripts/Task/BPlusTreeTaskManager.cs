@@ -48,6 +48,9 @@ public class BPlusTreeTaskManager : MonoBehaviour
     private BPlusTreeTaskType _currentTaskType;
     public BPlusTreeTaskType CurrentTaskType => _currentTaskType;
     
+    // Flag to prevent double execution of CloseTask
+    private bool _isTaskOpen = false;
+
     // Fields for validation
     private List<int> _targetKeys = new List<int>();
     public List<int> TargetKeys => _targetKeys;
@@ -75,6 +78,7 @@ public class BPlusTreeTaskManager : MonoBehaviour
 
     public void StartTask(ITaskTrigger trigger, BPlusTreeTaskType requestedTaskType)
     {
+        _isTaskOpen = true;
         BPlusTreeTaskType taskType = requestedTaskType;
         int taskMode = PlayerPrefs.GetInt("TaskMode", 0);
         if (taskMode == 1) taskType = BPlusTreeTaskType.Insertion;
@@ -124,6 +128,11 @@ public class BPlusTreeTaskManager : MonoBehaviour
 
         _inResultPhase = false;
         _lastResultSuccess = false;
+
+        if (PerformanceManager.Instance != null)
+        {
+            PerformanceManager.Instance.StartTaskTimer();
+        }
 
         GenerateTaskData(taskType);
     }
@@ -710,6 +719,9 @@ public class BPlusTreeTaskManager : MonoBehaviour
 
     public void CloseTask(bool success)
     {
+        if (!_isTaskOpen) return;
+        _isTaskOpen = false;
+
         if(taskCanvas) taskCanvas.SetActive(false);
         if(timerText) timerText.gameObject.SetActive(false);
         if(treeOrderText) treeOrderText.gameObject.SetActive(false);
@@ -720,12 +732,21 @@ public class BPlusTreeTaskManager : MonoBehaviour
             TaskContextMenu.Instance.HideMenu();
         }
         
+        // Reset result phase so we don't carry state to next task
+        _inResultPhase = false;
+
         // Resume game time
         Time.timeScale = 1f;
+
+        if (PerformanceManager.Instance != null)
+        {
+            PerformanceManager.Instance.RecordTaskResult(_currentTaskType, success);
+        }
 
         if(_currentTrigger != null)
         {
             _currentTrigger.OnTaskComplete(success);
+            _currentTrigger = null; // Clear the trigger reference
         }
     }
 

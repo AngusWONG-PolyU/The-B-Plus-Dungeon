@@ -14,6 +14,7 @@ public class DungeonManager : MonoBehaviour
     public Transform leafRoomSpawn; // Spawn point in the Leaf Room
 
     public bool isDungeonActive = false;
+    public bool isForceExiting = false;
 
     // Reset dungeon state
     public void ResetDungeon()
@@ -37,8 +38,24 @@ public class DungeonManager : MonoBehaviour
     
     public void OnPlayerDied()
     {
+        if (isForceExiting)
+        {
+            isForceExiting = false;
+            return; // Skip showing death UI since player is just exiting
+        }
+        
         Debug.Log("Player died - Exiting Dungeon Mode");
-        if (dungeonGenerator != null)
+        StartCoroutine(ShowLoseUIAfterDelay(2.5f));
+    }
+
+    private IEnumerator ShowLoseUIAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (PerformanceManager.Instance != null)
+        {
+            PerformanceManager.Instance.ShowPerformanceUI(false);
+        }
+        else if (dungeonGenerator != null)
         {
             dungeonGenerator.SetDungeonActive(false);
             dungeonGenerator.ResetDungeon();
@@ -48,6 +65,11 @@ public class DungeonManager : MonoBehaviour
     // Called when the player chooses the wrong portal
     public void OnWrongPortal()
     {
+        if (PerformanceManager.Instance != null)
+        {
+            PerformanceManager.Instance.RecordSearchMistake();
+        }
+
         if (playerHealth != null)
         {
             playerHealth.TakeDamage(1);
@@ -80,14 +102,11 @@ public class DungeonManager : MonoBehaviour
     private void OnTargetFound()
     {
         Debug.Log("Dungeon Complete! You found the target!");
-        
-        // TODO: Show victory UI, rewards, etc.
     }
     
     // Called when the player runs out of hearts
     private void OnGameOver()
     {
         Debug.Log("Game Over! No hearts remaining.");
-        // TODO: Show game over UI, restart option, etc.
     }
 }

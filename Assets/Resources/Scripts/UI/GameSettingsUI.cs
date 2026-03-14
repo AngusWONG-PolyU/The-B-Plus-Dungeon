@@ -89,7 +89,14 @@ public class GameSettingsUI : MonoBehaviour
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
-            // 1. Mock 'player death' event to clear active magic and reset things
+            // Set a flag in DungeonManager so it knows this is a forced exit and doesn't show the death UI
+            DungeonManager dManager = FindObjectOfType<DungeonManager>();
+            if (dManager != null)
+            {
+                dManager.isForceExiting = true;
+            }
+            
+            // 1. Clean up player state and mimic death logic to clear magic
             PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
             if (playerHealth != null)
             {

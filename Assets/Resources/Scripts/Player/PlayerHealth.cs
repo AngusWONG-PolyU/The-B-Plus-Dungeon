@@ -187,5 +187,13 @@ public class PlayerHealth : MonoBehaviour
         {
             respawnEffect.SetActive(false);
         }
+
+        // Ensure Dungeon UI is disabled after dying and respawning
+        DungeonGenerator dungeonGen = FindObjectOfType<DungeonGenerator>();
+        if (dungeonGen != null)
+        {
+            dungeonGen.SetDungeonActive(false);
+            dungeonGen.ResetDungeon();
+        }
     }
 }

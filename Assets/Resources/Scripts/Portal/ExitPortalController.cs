@@ -99,11 +99,7 @@ public class ExitPortalController : MonoBehaviour
     {
         if (playerInRange != null && teleportDestination != null)
         {
-            StartCoroutine(TeleportPlayerWithEffect(playerInRange));
-        }
-        else
-        {
-            Debug.LogWarning($"Cannot teleport: playerInRange={playerInRange}, teleportDestination={teleportDestination}");
+            StartCoroutine(TeleportPlayerWithEffect(playerInRange, true));
         }
     }
 
@@ -111,11 +107,11 @@ public class ExitPortalController : MonoBehaviour
     {
         if (playerObject != null && teleportDestination != null)
         {
-            StartCoroutine(TeleportPlayerWithEffect(playerObject));
+            StartCoroutine(TeleportPlayerWithEffect(playerObject, false));
         }
     }
     
-    IEnumerator TeleportPlayerWithEffect(GameObject targetPlayer)
+    IEnumerator TeleportPlayerWithEffect(GameObject targetPlayer, bool showPerformance = false)
     {
         if (targetPlayer == null || teleportDestination == null)
         {
@@ -245,6 +241,11 @@ public class ExitPortalController : MonoBehaviour
         if (dungeonGenerator != null)
         {
             dungeonGenerator.ResetDungeon();
+        }
+
+        if (PerformanceManager.Instance != null)
+        {
+            PerformanceManager.Instance.ShowPerformanceUI(isVictory: showPerformance, isForceExit: !showPerformance);
         }
     }
 }
