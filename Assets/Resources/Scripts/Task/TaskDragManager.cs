@@ -881,7 +881,7 @@ public class TaskDragManager : MonoBehaviour
         BPlusTreeVisualNode[] allNodes = FindObjectsOfType<BPlusTreeVisualNode>();
         foreach(var node in allNodes)
         {
-            CheckUnderflow(node);
+            CheckNodeErrors(node);
             CheckRouting(node);
         }
     }
@@ -937,29 +937,31 @@ public class TaskDragManager : MonoBehaviour
         }
     }
 
-    private void CheckUnderflow(BPlusTreeVisualNode node)
+    private void CheckNodeErrors(BPlusTreeVisualNode node)
     {
         if (node == null || node.CoreNode == null) return;
         
-        // Don't check underflow for root node unless it's a leaf
-        if (node.CoreNode == BPlusTreeTaskManager.Instance.CurrentTree.Root && !node.CoreNode.IsLeaf)
-        {
-            // Root internal node can have 1 key (2 children)
-            if (node.CoreNode.Keys.Count >= 1)
-            {
-                // If it was highlighted for routing error, don't clear it here
-                if (!node.IsHighlighted) node.SetHighlight(false);
-                return;
-            }
-        }
-
+        bool isError = false;
         int order = BPlusTreeTaskManager.Instance.treeOrder;
-        int minKeys = (int)Mathf.Ceil((order - 1) / 2.0f);
         
-        bool isUnderflow = node.CoreNode.Keys.Count < minKeys;
+        // Root node rules
+        if (node.CoreNode == BPlusTreeTaskManager.Instance.CurrentTree.Root)
+        {
+            // Root has no underflow limit, but can overflow
+            if (node.CoreNode.Keys.Count >= order) isError = true;
+        }
+        else
+        {
+            // Non-root rules
+            int minKeys = (int)Mathf.Ceil(order / 2.0f) - 1;
+            int maxKeys = order - 1;
+            
+            if (node.CoreNode.Keys.Count < minKeys) isError = true; // Underflow
+            if (node.CoreNode.Keys.Count > maxKeys) isError = true; // Overflow
+        }
         
         // Conditional Highlight
-        if (isUnderflow && ShouldHighlightError())
+        if (isError && ShouldHighlightError())
         {
             node.SetHighlight(true);
         }
