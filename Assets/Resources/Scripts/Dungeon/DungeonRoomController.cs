@@ -95,6 +95,13 @@ public class DungeonRoomController : MonoBehaviour
         {
             // Use a probability to control the room type
             float roll = Random.value;
+            
+            // In tutorial mode, never spawn enemies in normal rooms (always item room)
+            if (dungeonManager != null && dungeonManager.dungeonGenerator != null && dungeonManager.dungeonGenerator.difficultyMode == DungeonGenerator.DifficultyMode.Tutorial)
+            {
+                roll = 1f; // Force it to be >= enemyRoomProbability
+            }
+
             if (roll < enemyRoomProbability)
             {
                 SetupEnemyRoom();

@@ -60,8 +60,17 @@ public class PlayerHealth : MonoBehaviour
 
         if (currentHearts <= 0)
         {
-            currentHearts = 0;
-            Die();
+            DungeonManager dm = FindObjectOfType<DungeonManager>();
+            if (dm != null && dm.dungeonGenerator != null && dm.dungeonGenerator.difficultyMode == DungeonGenerator.DifficultyMode.Tutorial)
+            {
+                currentHearts = maxHearts;
+                Debug.Log("Tutorial Mode: Player health reset to full instead of dying.");
+            }
+            else
+            {
+                currentHearts = 0;
+                Die();
+            }
         }
 
         OnHealthChanged?.Invoke(currentHearts);
