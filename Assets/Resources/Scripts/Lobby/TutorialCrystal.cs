@@ -12,23 +12,28 @@ public class TutorialCrystal : MonoBehaviour
     {
         new TutorialPage 
         {
-            title = "Gameplay Controls",
-            content = "<color=#FFD700>Movement:</color>\nClick anywhere on the ground to move.\n\n<color=#FFD700>Skills:</color>\nPress 1, 2, 3, or 4 to select a skill and aim with your mouse.\n\n<size=80%><i>You can press Left/Right Arrow (A/D) or click the Next/Previous button to turn pages, Esc or click the X button to close.</i></size>"
+            title = "HUD & Controls",
+            content = "<color=#FFD700>UI Overview:</color>\n• <color=#FF6347>Top Left:</color> Hearts (HP)\n• <color=#1E90FF>Top Right:</color> Minimap (View B+ tree structure)\n• <color=#32CD32>Bottom Right:</color> Skills (Press 1, 2, 3, or 4 to cast)\n• <color=#FFA500>Bottom Left:</color> Settings (Task configs, Time limits, Return to Lobby)\n• <color=#FFD700>Bottom Center:</color> Your current Target!"
         },
         new TutorialPage 
         {
-            title = "Task / B+ Tree Operations",
+            title = "Dungeon Exploration",
+            content = "Find your target by entering the correct <color=#1E90FF>Portals</color>, which display specific routing paths.\n\nInside, you will encounter <color=#FF6347>an Enemy</color> or discover <color=#32CD32>an Item</color>. Clear the room, then go to unlock the door!\n\nEntering the final correct portal leads you to the <color=#FF0000>Boss Room</color>, where a tougher enemy awaits!"
+        },
+        new TutorialPage 
+        {
+            title = "Task / Operations",
             content = "<color=#FFD700>Move/Promote:</color> Drag and drop a Key to another Node.\n\n<color=#FFD700>Merge Node:</color> Drag and Drop a Node onto another Node.\n\n<color=#FFD700>Right-Click Options:</color>\n- Right-click a Key to <color=#FF6347>Delete</color>, <color=#32CD32>CopyUp</color>, or <color=#1E90FF>Split Node</color>.\n- Right-click an empty Node to delete it."
         },
         new TutorialPage 
         {
             title = "B+ Tree Rules (1/2)",
-            content = "1. <color=#FFD700>Order (Branching Factor):</color>\nA B+ tree of Order M means a node can have at most M children and M-1 keys. It has a minimum requirement of keys (usually ceil(M/2)-1) to stay balanced.\n\n2. <color=#FFD700>Leaf Nodes:</color>\nAll actual data is stored at the bottom (Leaf) level. All leaf nodes MUST be at the exact same depth!"
+            content = "1. <color=#FFD700>Order (M):</color> A node can have at most <color=#1E90FF>M</color> children and <color=#1E90FF>M-1</color> keys.\n\n2. <color=#FFD700>Min Keys:</color> To maintain balance, nodes have a minimum key limit!\n- Minimum Keys = <color=#FF6347>ceil(M/2) - 1</color>"
         },
         new TutorialPage 
         {
             title = "B+ Tree Rules (2/2)",
-            content = "3. <color=#FFD700>Redistribute vs Merge:</color>\nWhen a node has too few keys, try borrowing (Redistributing) from a sibling first! Merging nodes might cause a chain reaction (Cascade Effect) that shrinks the tree height, costing more operations."
+            content = "3. <color=#FFD700>Leaf Nodes:</color> All data is stored at the bottom. They MUST be at the exact same depth.\n\n4. <color=#FFD700>Balance:</color> When a node falls below the minimum keys, try borrowing (<color=#32CD32>Redistribute</color>) from a sibling first! <color=#FF6347>Merge</color> only when necessary, as it can cause a <color=#1E90FF>Cascading Effect</color> that shrinks the tree."
         }
     };
 
