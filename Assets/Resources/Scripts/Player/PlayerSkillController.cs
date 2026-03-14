@@ -176,6 +176,10 @@ public class PlayerSkillController : MonoBehaviour
         if (index < 0 || index >= equippedSkills.Length || equippedSkills[index] == null)
         {
             Debug.Log($"Slot {index + 1} is empty.");
+            if (PlayerInstructionUI.Instance != null)
+            {
+                PlayerInstructionUI.Instance.ShowInstruction($"Slot {index + 1} is empty.", 2f, true);
+            }
             return;
         }
         
@@ -183,6 +187,10 @@ public class PlayerSkillController : MonoBehaviour
         if (currentCooldowns[index] > 0)
         {
             Debug.Log($"{equippedSkills[index].skillName} is on cooldown ({currentCooldowns[index]:F1}s).");
+            if (PlayerInstructionUI.Instance != null)
+            {
+                PlayerInstructionUI.Instance.ShowInstruction($"{equippedSkills[index].skillName} is on cooldown.", 2f, true);
+            }
             return;
         }
         
@@ -192,6 +200,10 @@ public class PlayerSkillController : MonoBehaviour
             if (currentCharges[index] <= 0)
             {
                 Debug.Log($"{equippedSkills[index].skillName} has no charges left!");
+                if (PlayerInstructionUI.Instance != null)
+                {
+                    PlayerInstructionUI.Instance.ShowInstruction($"{equippedSkills[index].skillName} has no charges left!", 2f, true);
+                }
                 return;
             }
         }
@@ -202,6 +214,10 @@ public class PlayerSkillController : MonoBehaviour
             if (playerHealth.currentHearts >= playerHealth.maxHearts)
             {
                 Debug.Log("HP is full. Cannot use healing magic.");
+                if (PlayerInstructionUI.Instance != null)
+                {
+                    PlayerInstructionUI.Instance.ShowInstruction("HP is full. Cannot use healing magic.", 2f, true);
+                }
                 return;
             }
         }
