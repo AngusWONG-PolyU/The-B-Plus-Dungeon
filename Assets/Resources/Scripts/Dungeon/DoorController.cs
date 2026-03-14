@@ -9,6 +9,7 @@ public class DoorController : MonoBehaviour, ITaskTrigger
     
     [Header("Task Interaction")]
     public bool isTaskLocked = false;
+    public SkillData counterMagicSkill;
 
     [Header("Settings")]
     public DoorType type = DoorType.Disappearing;
@@ -276,14 +277,26 @@ public class DoorController : MonoBehaviour, ITaskTrigger
         {
             Debug.Log("Door Task Failed.");
             
-            // Deduct player health directly
+            // Cast Counter-Magic at the player
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
             {
-                PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
-                if (playerHealth != null)
+                if (counterMagicSkill != null && counterMagicSkill.skillPrefab != null)
                 {
-                    playerHealth.TakeDamage(1);
+                    GameObject magic = Instantiate(counterMagicSkill.skillPrefab, player.transform.position, Quaternion.identity);
+                    SpellProjectile proj = magic.GetComponent<SpellProjectile>();
+                    if (proj != null)
+                    {
+                        proj.SetCaster("Enemy");
+                    }
+                }
+                else
+                {
+                    PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+                    if (playerHealth != null)
+                    {
+                        playerHealth.TakeDamage(1);
+                    }
                 }
             }
 
