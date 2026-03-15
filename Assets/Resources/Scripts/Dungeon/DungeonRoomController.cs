@@ -14,8 +14,13 @@ public class DungeonRoomController : MonoBehaviour
     public GameObject boss; // Boss present in this room prefab
 
     [Header("Items")]
-    public List<GameObject> items;
-    private List<GameObject> availableItems; // Available items for the current run
+    public List<GameObject> normalItems;
+    public List<GameObject> rareItems;
+    private List<GameObject> availableNormalItems;
+    private List<GameObject> availableRareItems;
+
+    [Range(0f, 1f)]
+    public float rareSpawnChance = 0.4f;
 
     [Header("Room Settings")]
     public bool isCleared = false;
@@ -38,15 +43,29 @@ public class DungeonRoomController : MonoBehaviour
         DisableAllContent();
         
         // Initialize available items
-        if (availableItems == null) ResetItems();
+        if (availableNormalItems == null || availableRareItems == null) ResetItems();
     }
 
     public void ResetItems()
     {
-        if (items != null)
+        if (normalItems != null)
         {
-            availableItems = new List<GameObject>(items);
-            Debug.Log($"[DungeonRoomController] Reset items list. Count: {availableItems.Count}");
+            availableNormalItems = new List<GameObject>(normalItems);
+            Debug.Log($"[DungeonRoomController] Reset normal items list. Count: {availableNormalItems.Count}");
+        }
+        else
+        {
+            availableNormalItems = new List<GameObject>();
+        }
+
+        if (rareItems != null)
+        {
+            availableRareItems = new List<GameObject>(rareItems);
+            Debug.Log($"[DungeonRoomController] Reset rare items list. Count: {availableRareItems.Count}");
+        }
+        else
+        {
+            availableRareItems = new List<GameObject>();
         }
     }
 
@@ -163,9 +182,17 @@ public class DungeonRoomController : MonoBehaviour
         }
 
         // Disable items
-        if (items != null)
+        if (normalItems != null)
         {
-            foreach (var item in items)
+            foreach (var item in normalItems)
+            {
+                if (item != null) item.SetActive(false);
+            }
+        }
+
+        if (rareItems != null)
+        {
+            foreach (var item in rareItems)
             {
                 if (item != null) item.SetActive(false);
             }
@@ -236,41 +263,42 @@ public class DungeonRoomController : MonoBehaviour
 
     private void SetupItemRoom()
     {
-        if (availableItems != null && availableItems.Count > 0)
+        bool canSpawnRare = availableRareItems != null && availableRareItems.Count > 0;
+        bool canSpawnNormal = availableNormalItems != null && availableNormalItems.Count > 0;
+
+        if (canSpawnRare || canSpawnNormal)
         {
-            // Calculate total weight (sum of all spawn weights)
-            float totalWeight = 0f;
-            foreach (GameObject itemObj in availableItems)
+            List<GameObject> chosenPool = null;
+
+            // Determine which pool to pull from
+            if (canSpawnRare && canSpawnNormal)
             {
-                if (itemObj != null)
+                if (Random.value <= rareSpawnChance)
                 {
-                    DungeonItem di = itemObj.GetComponent<DungeonItem>();
-                    totalWeight += (di != null) ? di.spawnWeight : 1f;
+                    chosenPool = availableRareItems;
+                    Debug.Log($"[DungeonRoomController] Rolled for RARE item pool!");
+                }
+                else
+                {
+                    chosenPool = availableNormalItems;
+                    Debug.Log($"[DungeonRoomController] Rolled for NORMAL item pool!");
                 }
             }
-
-            // Pick a random value between 0 and the total weight
-            float randomValue = Random.Range(0f, totalWeight);
-            float currentWeight = 0f;
-            int selectedIndex = 0;
-
-            for (int i = 0; i < availableItems.Count; i++)
+            else if (canSpawnRare)
             {
-                if (availableItems[i] != null)
-                {
-                    DungeonItem di = availableItems[i].GetComponent<DungeonItem>();
-                    float weight = (di != null) ? di.spawnWeight : 1f;
-                    currentWeight += weight;
-
-                    if (randomValue <= currentWeight)
-                    {
-                        selectedIndex = i;
-                        break;
-                    }
-                }
+                chosenPool = availableRareItems;
+            }
+            else
+            {
+                chosenPool = availableNormalItems;
             }
 
-            GameObject selectedItem = availableItems[selectedIndex];
+            if (chosenPool.Count == 0) return;
+
+            // Pick a random item in the chosen pool
+            int selectedIndex = Random.Range(0, chosenPool.Count);
+
+            GameObject selectedItem = chosenPool[selectedIndex];
 
             if (selectedItem != null)
             {
@@ -281,8 +309,8 @@ public class DungeonRoomController : MonoBehaviour
                 DungeonItem di = selectedItem.GetComponent<DungeonItem>();
                 if (di != null && di.isOneTimeUse)
                 {
-                    availableItems.RemoveAt(selectedIndex);
-                    Debug.Log($"Item {selectedItem.name} is one-time use and has been removed from the pool for this run.");
+                    chosenPool.RemoveAt(selectedIndex);
+                    Debug.Log($"Item {selectedItem.name} is one-time use and has been removed from its pool for this run.");
                 }
             }
         }
