@@ -27,13 +27,28 @@ public class TutorialCrystal : MonoBehaviour
         },
         new TutorialPage 
         {
-            title = "B+ Tree Rules (1/2)",
-            content = "1. <color=#FFD700>Order (M):</color> A node can have at most <color=#1E90FF>M</color> children and <color=#1E90FF>M-1</color> keys.\n\n2. <color=#FFD700>Min Keys:</color> To maintain balance, nodes have a minimum key limit!\n- Minimum Keys = <color=#FF6347>ceil(M/2) - 1</color>"
+            title = "B+ Tree: Fundamentals",
+            content = "<color=#FFD700>Search Routing:</color> Follow the keys! Values <color=#FF6347>smaller</color> than a key go <color=#1E90FF>Left</color>, while <color=#32CD32>greater/equal</color> values go <color=#1E90FF>Right</color>.\n\n<color=#FFD700>Leaf Nodes:</color> All data is stored at the bottom leaves. They MUST all be at the <color=#FFD700>exact same depth</color> for balance!"
         },
         new TutorialPage 
         {
-            title = "B+ Tree Rules (2/2)",
-            content = "3. <color=#FFD700>Leaf Nodes:</color> All data is stored at the bottom. They MUST be at the exact same depth.\n\n4. <color=#FFD700>Balance:</color> When a node falls below the minimum keys, try borrowing (<color=#32CD32>Redistribute</color>) from a sibling first! <color=#FF6347>Merge</color> only when necessary, as it can cause a <color=#1E90FF>Cascading Effect</color> that shrinks the tree."
+            title = "B+ Tree: Node Limits",
+            content = "1. <color=#FFD700>Order (M):</color> A node can have at most <color=#1E90FF>M</color> children and <color=#1E90FF>M-1</color> keys.\n\n2. <color=#FFD700>Min Keys:</color> Nodes (except root) have a strict minimum key limit!\n• Min Keys = <color=#FF6347>ceil(M/2) - 1</color>"
+        },
+        new TutorialPage
+        {
+            title = "B+ Tree: Growing",
+            content = "When a node exceeds its <color=#FF6347>Max Keys</color>, it must be <color=#32CD32>Split</color>!\n\n<color=#FFD700>Right-Biased Convention:</color> This game adopts a Right-Biased split as its convention, meaning during a node split with an odd number of elements, the extra element <color=#1E90FF>always goes to the right side</color>."
+        },
+        new TutorialPage
+        {
+            title = "B+ Tree: Balancing",
+            content = "When a node falls below <color=#FF6347>Min Keys</color>:\n1. <color=#32CD32>Redistribute:</color> Borrow from a sibling! (<color=#FFD700>Tie-Breaking:</color> If both can lend a key, follow a convention <color=#1E90FF>such as Right-Biased</color> to borrow from the right).\n2. <color=#FF6347>Merge:</color> Merge only if siblings have no extra keys! This <color=#FFA500>may cause a Cascading Effect</color> that shrinks the tree height."
+        },
+        new TutorialPage
+        {
+            title = "B+ Tree: Task Validation",
+            content = "Because B+ Tree operations can sometimes have multiple valid outcomes, this game uses <color=#32CD32>Structural Validation</color> to check your answers!\n\nThis means whenever your final tree is valid (doesn't break any rules), it is <color=#1E90FF>Correct</color>. Strict tie-breaking conventions are preferred and taught, but <color=#FFD700>not strictly enforced</color> to pass!"
         }
     };
 
