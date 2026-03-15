@@ -60,6 +60,15 @@ public class TutorialUIManager : MonoBehaviour
         
         if (tutorialPanel != null)
         {
+            // Bring to the front so it is not covered by TaskCanvas or other UI
+            tutorialPanel.transform.SetAsLastSibling();
+            
+            // Deselect current UI element
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+            {
+                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+            }
+
             tutorialPanel.SetActive(true);
             UpdatePageDisplay();
         }
@@ -70,6 +79,10 @@ public class TutorialUIManager : MonoBehaviour
         if (tutorialPanel != null)
         {
             tutorialPanel.SetActive(false);
+            if (Time.timeScale == 0f)
+            {
+                Time.timeScale = 1f; // Resume the game when tutorial is closed
+            }
         }
     }
 

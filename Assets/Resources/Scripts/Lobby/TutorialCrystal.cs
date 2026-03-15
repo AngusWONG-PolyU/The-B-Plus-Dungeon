@@ -18,7 +18,10 @@ public class TutorialCrystal : MonoBehaviour
                       "• <color=#1E90FF>Top Right:</color> Minimap (View B+ tree structure)\n" +
                       "• <color=#32CD32>Bottom Right:</color> Skills (Press 1, 2, 3, or 4 to cast)\n" +
                       "• <color=#FFA500>Bottom Left:</color> Settings (Task configs, Time limits, Return to Lobby)\n" +
-                      "• <color=#FFD700>Bottom Center:</color> Your current Target!"
+                      "• <color=#FFD700>Bottom Center:</color> Your current Target!\n\n" +
+                      "<color=#FFD700>Basic Controls:</color>\n" +
+                      "• Most interactions (Read, Teleport, Unlock): <color=#1E90FF>Press E</color>\n" +
+                      "• View this tutorial anywhere: <color=#1E90FF>Press T</color>"
         },
         new TutorialPage 
         {
@@ -93,15 +96,40 @@ public class TutorialCrystal : MonoBehaviour
 
     private void Update()
     {
+        // Toggle tutorial anywhere with 'T'
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            if (TutorialUIManager.Instance != null && TutorialUIManager.Instance.tutorialPanel != null)
+            {
+                bool isOpen = TutorialUIManager.Instance.tutorialPanel.activeInHierarchy;
+                if (isOpen)
+                {
+                    TutorialUIManager.Instance.CloseTutorial();
+                }
+                else if (Time.timeScale > 0f) // Only open if time is running (not blocked by settings/confirmation)
+                {
+                    TutorialUIManager.Instance.OpenTutorial(tutorialPages);
+                    Time.timeScale = 0f; // Pause the game
+                }
+            }
+        }
+
+        // Interact to open tutorial with 'E'
         if (isPlayerInRange && Input.GetKeyDown(KeyCode.E))
         {
-            if (TutorialUIManager.Instance != null)
+            if (TutorialUIManager.Instance != null && TutorialUIManager.Instance.tutorialPanel != null)
             {
-                TutorialUIManager.Instance.OpenTutorial(tutorialPages);
-                // Hide the prompt once the player opens the UI
-                if (PlayerInstructionUI.Instance != null)
+                bool isOpen = TutorialUIManager.Instance.tutorialPanel.activeInHierarchy;
+                if (!isOpen && Time.timeScale > 0f)
                 {
-                    PlayerInstructionUI.Instance.HideInstruction();
+                    TutorialUIManager.Instance.OpenTutorial(tutorialPages);
+                    Time.timeScale = 0f; // Pause the game
+                    
+                    // Hide the prompt once the player opens the UI
+                    if (PlayerInstructionUI.Instance != null)
+                    {
+                        PlayerInstructionUI.Instance.HideInstruction();
+                    }
                 }
             }
         }
