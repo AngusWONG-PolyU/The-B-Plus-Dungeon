@@ -76,6 +76,16 @@ public class TutorialCrystal : MonoBehaviour
             title = "B+ Tree: Task Validation",
             content = "Because B+ Tree operations can sometimes have multiple valid outcomes, this game uses <color=#32CD32>Structural Validation</color> to check your answers!\n\n" +
                       "This means whenever your final tree is valid (doesn't break any rules), it is <color=#1E90FF>Correct</color>. Strict tie-breaking conventions are preferred and taught, but <color=#FFD700>not strictly enforced</color> to pass!"
+        },
+        new TutorialPage
+        {
+            title = "Scoring & Grades",
+            content = "Aim for an <color=#FFD700>S Grade</color>!\n\n" +
+                      "<color=#32CD32>Base Score:</color> +100 per Insert, +150 per Delete\n" +
+                      "<color=#1E90FF>Time Bonus:</color> The faster you finish a task, the more bonus points!\n" +
+                      "<color=#FF6347>Mistakes Penalty:</color> -100 (Insert/Delete), -50 (Search) mistakes.\n" +
+                      "<color=#FFD700>Perfect Clear:</color> +500 points for 0 mistakes!\n\n" +
+                      "<color=#FFD700>S</color> (2500+ & 0 Mistakes) | <color=#FF6347>A</color> (1500+) | <color=#1E90FF>B</color> (800+) | <color=#32CD32>C</color> (400+) | D"
         }
     };
 
