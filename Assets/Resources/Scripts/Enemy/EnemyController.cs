@@ -430,12 +430,12 @@ public class EnemyController : MonoBehaviour, ITaskTrigger
         Debug.Log("Enemy Attack Interrupted!");
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, bool bypassShield = false)
     {
         if (isDead) return;
         
-        // Enemy only takes damage when Frozen
-        if (!isFrozen) return;
+        // Enemy only takes damage when Frozen, unless bypassed
+        if (!isFrozen && !bypassShield) return;
         
         // Handle Critical State
         if (criticalVulnerable)

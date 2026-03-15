@@ -14683,9 +14683,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 15
   isStationary: 1
+  manualDestruction: 0
   waitForParticles: 1
-  lifetime: 3
+  lifetime: 1
   destroyOnImpact: 0
+  damage: 1
+  isHealing: 0
+  healAmount: 1
   hitEffect: {fileID: 0}
 --- !u!54 &8868308415842158536
 Rigidbody:

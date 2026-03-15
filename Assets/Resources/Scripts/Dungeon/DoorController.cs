@@ -27,6 +27,12 @@ public class DoorController : MonoBehaviour, ITaskTrigger
         
         if (obstacle != null) obstacle.enabled = false;
 
+        // Hide instruction if it was showing
+        if (isPlayerInCollider && PlayerInstructionUI.Instance != null)
+        {
+            PlayerInstructionUI.Instance.HideInstruction();
+        }
+
         gameObject.SetActive(false);
     }
     

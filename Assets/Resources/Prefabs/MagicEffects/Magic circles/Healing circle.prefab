@@ -24607,7 +24607,7 @@ MonoBehaviour:
   isStationary: 1
   manualDestruction: 0
   waitForParticles: 1
-  lifetime: 3
+  lifetime: 1
   destroyOnImpact: 0
   damage: 1
   isHealing: 1

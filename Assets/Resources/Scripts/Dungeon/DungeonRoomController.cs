@@ -238,8 +238,39 @@ public class DungeonRoomController : MonoBehaviour
     {
         if (availableItems != null && availableItems.Count > 0)
         {
-            int index = Random.Range(0, availableItems.Count);
-            GameObject selectedItem = availableItems[index];
+            // Calculate total weight (sum of all spawn weights)
+            float totalWeight = 0f;
+            foreach (GameObject itemObj in availableItems)
+            {
+                if (itemObj != null)
+                {
+                    DungeonItem di = itemObj.GetComponent<DungeonItem>();
+                    totalWeight += (di != null) ? di.spawnWeight : 1f;
+                }
+            }
+
+            // Pick a random value between 0 and the total weight
+            float randomValue = Random.Range(0f, totalWeight);
+            float currentWeight = 0f;
+            int selectedIndex = 0;
+
+            for (int i = 0; i < availableItems.Count; i++)
+            {
+                if (availableItems[i] != null)
+                {
+                    DungeonItem di = availableItems[i].GetComponent<DungeonItem>();
+                    float weight = (di != null) ? di.spawnWeight : 1f;
+                    currentWeight += weight;
+
+                    if (randomValue <= currentWeight)
+                    {
+                        selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            GameObject selectedItem = availableItems[selectedIndex];
 
             if (selectedItem != null)
             {
@@ -250,7 +281,7 @@ public class DungeonRoomController : MonoBehaviour
                 DungeonItem di = selectedItem.GetComponent<DungeonItem>();
                 if (di != null && di.isOneTimeUse)
                 {
-                    availableItems.RemoveAt(index);
+                    availableItems.RemoveAt(selectedIndex);
                     Debug.Log($"Item {selectedItem.name} is one-time use and has been removed from the pool for this run.");
                 }
             }

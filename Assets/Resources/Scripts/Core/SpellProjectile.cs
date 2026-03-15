@@ -30,7 +30,7 @@ public class SpellProjectile : MonoBehaviour
         casterTag = tag;
     }
 
-    void Start()
+    protected virtual void Start()
     {
         if (manualDestruction) return;
 
@@ -61,7 +61,7 @@ public class SpellProjectile : MonoBehaviour
         }
     }
 
-    void OnTriggerEnter(Collider other)
+    protected virtual void OnTriggerEnter(Collider other)
     {
         Debug.Log($"Projectile hit: {other.name} (Tag: {other.tag})");
 

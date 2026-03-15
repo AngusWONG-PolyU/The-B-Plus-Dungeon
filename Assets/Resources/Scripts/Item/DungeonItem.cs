@@ -7,6 +7,10 @@ public abstract class DungeonItem : MonoBehaviour
     [Header("Item Settings")]
     public string itemName;
     public bool isOneTimeUse = false; // If true, appears only once per run
+    
+    [Header("Spawn Settings")]
+    [Range(0f, 1f)]
+    public float spawnWeight = 1f; // Weight for spawning (1 = normal, 0.3 = rare)
 
     private GameObject playerInRange;
     
