@@ -100,10 +100,10 @@ public class PerformanceManager : MonoBehaviour
         float avgDelete = CalculateAverage(_deleteTimes);
 
         // Display Stats
-        if (avgInsertTimeText != null) avgInsertTimeText.text = "Avg Insert Time: " + (avgInsert > 0 ? $"{avgInsert:F1}s" : "--");
+        if (avgInsertTimeText != null) avgInsertTimeText.text = $"Average Insert Time: {(avgInsert > 0 ? $"{avgInsert:F1}s" : "--")} <size=80%><color=#999999>({_insertTimes.Count} Success)</color></size>";
         if (insertMistakesText != null) insertMistakesText.text = "Insert Mistakes: " + _insertMistakes.ToString();
         
-        if (avgDeleteTimeText != null) avgDeleteTimeText.text = "Avg Delete Time: " + (avgDelete > 0 ? $"{avgDelete:F1}s" : "--");
+        if (avgDeleteTimeText != null) avgDeleteTimeText.text = $"Average Delete Time: {(avgDelete > 0 ? $"{avgDelete:F1}s" : "--")} <size=80%><color=#999999>({_deleteTimes.Count} Success)</color></size>";
         if (deleteMistakesText != null) deleteMistakesText.text = "Delete Mistakes: " + _deleteMistakes.ToString();
 
         if (searchMistakesText != null) searchMistakesText.text = "Search Mistakes: " + _searchMistakes.ToString();
