@@ -5,7 +5,7 @@ using UnityEngine;
 public class SuperSlashProjectile : SpellProjectile
 {
     [Header("Super Slash Settings")]
-    public float piercingLifetime = 3f;
+    public float piercingLifetime = 5f;
     private HashSet<GameObject> superHitTargets = new HashSet<GameObject>();
 
     protected override void Start()
@@ -40,6 +40,9 @@ public class SuperSlashProjectile : SpellProjectile
                 enemy.TakeDamage(enemy.maxHealth, true);
                 hitSomething = true;
                 Debug.Log($"[SuperSlash] Destroyed Enemy: {enemy.gameObject.name}");
+                
+                // Reward bypassing an enemy
+                if (PerformanceManager.Instance != null) PerformanceManager.Instance.RecordSuperSlashBypass();
             }
         }
         
@@ -50,9 +53,12 @@ public class SuperSlashProjectile : SpellProjectile
             door.Open();
             hitSomething = true;
             Debug.Log($"[SuperSlash] Destroyed/Opened Door: {door.gameObject.name}");
+            
+            // Reward bypassing a door
+            if (PerformanceManager.Instance != null) PerformanceManager.Instance.RecordSuperSlashBypass();
         }
 
-        // 5. Play hit effect without destroying the projectile
+        // 5. Play the hit effect without destroying the projectile
         if (hitSomething && hitEffect != null)
         {
             Instantiate(hitEffect, other.bounds.center, Quaternion.identity);

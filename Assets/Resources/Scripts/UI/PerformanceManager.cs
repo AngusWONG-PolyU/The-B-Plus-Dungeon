@@ -26,6 +26,7 @@ public class PerformanceManager : MonoBehaviour
     private int _insertMistakes;
     private int _deleteMistakes;
     private int _searchMistakes;
+    private int _superSlashBypasses;
 
     private float _currentTaskStartTime;
 
@@ -74,6 +75,11 @@ public class PerformanceManager : MonoBehaviour
         _searchMistakes++;
     }
 
+    public void RecordSuperSlashBypass()
+    {
+        _superSlashBypasses++;
+    }
+
     public void ShowPerformanceUI(bool isVictory, bool isForceExit = false)
     {
         if (performancePanel == null) return;
@@ -111,7 +117,14 @@ public class PerformanceManager : MonoBehaviour
         // Calculate Score
         int score = CalculateScore(avgInsert, avgDelete, isVictory, isForceExit, out string grade);
 
-        if (totalScoreText != null) totalScoreText.text = "Total Score: " + score.ToString();
+        if (totalScoreText != null) 
+        {
+            totalScoreText.text = "Total Score: " + score.ToString();
+            if (_superSlashBypasses > 0)
+            {
+                totalScoreText.text += $"\n<size=80%><color=#FFA500>({_superSlashBypasses} Super Slash Bypasses: +{_superSlashBypasses * 300} pts)</color></size>";
+            }
+        }
         
         if (gradeText != null)
         {
@@ -149,6 +162,9 @@ public class PerformanceManager : MonoBehaviour
             foreach(float t in _insertTimes) score += Mathf.FloorToInt(Mathf.Max(0, 15f - t) * 10);
             foreach(float t in _deleteTimes) score += Mathf.FloorToInt(Mathf.Max(0, 20f - t) * 10);
         }
+
+        // Super Slash Bypass Bonus
+        score += _superSlashBypasses * 300;
 
         // Mistake Penalty
         score -= _insertMistakes * 100;
@@ -190,6 +206,7 @@ public class PerformanceManager : MonoBehaviour
         _insertMistakes = 0;
         _deleteMistakes = 0;
         _searchMistakes = 0;
+        _superSlashBypasses = 0;
         
         if (performancePanel != null)
         {
