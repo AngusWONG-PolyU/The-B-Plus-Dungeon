@@ -118,16 +118,6 @@ public class TaskDragManager : MonoBehaviour
         {
             if (sourceNode.CoreNode.Parent == targetNode.CoreNode)
             {
-                // Cannot copy up a key that is the target of a Deletion task
-                if (BPlusTreeTaskManager.Instance != null && 
-                    BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion && 
-                    BPlusTreeTaskManager.Instance.TargetKeys.Contains(keyVal))
-                {
-                    Debug.LogWarning("Cannot copy up a target key during a deletion task.");
-                    PlayerInstructionUI.Instance?.ShowInstruction("Cannot copy up the target deletion key.", errorInstructionTime, true);
-                    return false;
-                }
-
                 Debug.Log("Operation: Copy Up (Leaf -> Parent)");
                 bool success = CopyKeyToParent(sourceNode, keyVal);
                 if (success)
@@ -200,16 +190,6 @@ public class TaskDragManager : MonoBehaviour
         }
 
         // If it's not a promotion, it must be a Borrow/Redistribute operation
-        // Cannot move a key that is the target of a Deletion task
-        if (BPlusTreeTaskManager.Instance != null && 
-            BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion && 
-            BPlusTreeTaskManager.Instance.TargetKeys.Contains(keyVal))
-        {
-            Debug.LogWarning("Cannot move a target deletion key.");
-            PlayerInstructionUI.Instance?.ShowInstruction("Cannot move the target deletion key. Delete it instead.", errorInstructionTime, true);
-            return false;
-        }
-
         // Sibling Restriction Check for Borrowing
         if (!AreNodesAdjacent(sourceNode.CoreNode, targetNode.CoreNode))
         {

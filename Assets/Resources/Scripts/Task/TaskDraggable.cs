@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(CanvasGroup))]
@@ -30,6 +29,15 @@ public class TaskDraggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         
         // Prevent drag if confirmation panel is open (Time is paused)
         if (Time.timeScale == 0f) return;
+
+        // Prevent dragging if this key is the target of a Deletion task
+        TaskClickable clickable = GetComponent<TaskClickable>();
+        if (clickable != null && BPlusTreeTaskManager.Instance != null &&
+            BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion &&
+            BPlusTreeTaskManager.Instance.TargetKeys.Contains(clickable.GetValue()))
+        {
+            return;
+        }
 
         _isDragging = true;
         isSuccess = false;

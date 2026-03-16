@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class TaskContextMenu : MonoBehaviour
 {
@@ -64,6 +63,27 @@ public class TaskContextMenu : MonoBehaviour
             menuPanel.transform.position = screenPos; 
         }
 
+        bool isDeletionTarget = false;
+        if (BPlusTreeTaskManager.Instance != null && 
+            BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion && 
+            BPlusTreeTaskManager.Instance.TargetKeys.Contains(target.GetValue()))
+        {
+            isDeletionTarget = true;
+        }
+
+        if (isDeletionTarget)
+        {
+            if (deleteKeyButton)
+            {
+                deleteKeyButton.gameObject.SetActive(true);
+                deleteKeyButton.interactable = true;
+            }
+            if (deleteNodeButton) deleteNodeButton.gameObject.SetActive(false);
+            if (copyUpButton) copyUpButton.gameObject.SetActive(false);
+            if (splitNodeButton) splitNodeButton.gameObject.SetActive(false);
+            return;
+        }
+
         // Configure Buttons for Key Context
         if (deleteKeyButton) 
         {
@@ -118,14 +138,6 @@ public class TaskContextMenu : MonoBehaviour
                 
                 // Can only copy up if the current node is a Leaf Node
                 bool canCopyUp = (node != null && node.CoreNode != null && node.CoreNode.IsLeaf);
-                
-                // Cannot copy up a key that is the target of a Deletion task
-                if (BPlusTreeTaskManager.Instance != null && 
-                    BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion && 
-                    BPlusTreeTaskManager.Instance.TargetKeys.Contains(val))
-                {
-                    canCopyUp = false;
-                }
                                   
                 copyUpButton.interactable = canCopyUp;
             }
