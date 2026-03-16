@@ -12,27 +12,32 @@ public class TutorialCrystal : MonoBehaviour
     {
         new TutorialPage 
         {
-            title = "HUD & Controls",
+            title = "HUD & Controls (1)",
             content = "<color=#FFD700>UI Overview:</color>\n" +
                       "• <color=#FF6347>Top Left:</color> Hearts (HP)\n" +
                       "• <color=#1E90FF>Top Right:</color> Minimap (View B+ tree structure)\n" +
                       "• <color=#32CD32>Bottom Right:</color> Skills (Press 1, 2, 3, or 4 to cast)\n" +
                       "• <color=#FFA500>Bottom Left:</color> Settings (Task configs, Time limits, Return to Lobby)\n" +
-                      "• <color=#FFD700>Bottom Center:</color> Your current Target!\n\n" +
-                      "<color=#FFD700>Controls:</color>\n" +
+                      "• <color=#FFD700>Bottom Center:</color> Your current Target!"
+        },
+        new TutorialPage 
+        {
+            title = "HUD & Controls (2)",
+            content = "<color=#FFD700>Controls:</color>\n" +
                       "• <color=#1E90FF>Press E</color> to Interact (Read, Teleport, Unlock).\n" +
-                      "• <color=#1E90FF>Press T</color> to view or close this tutorial anywhere.\n" +
+                      "• <color=#1E90FF>Press M</color> to toggle full map view in the dungeon.\n" +
+                      "• <color=#1E90FF>Press T</color> to toggle this tutorial anywhere.\n" +
                       "• <color=#1E90FF>Press A / D</color> or <color=#1E90FF>Arrows (Left / Right)</color> to change pages.\n" +
                       "• <color=#1E90FF>Press Esc</color> to close."
         },
         new TutorialPage 
         {
             title = "Skills Overview",
-            content = "Press 1-4 to cast!\n\n" +
+            content = "Press 1-4 to cast! <color=#FFD700>(Press again to cancel aiming)</color>\n\n" +
                       "• <color=#1E90FF>[1] Crystal Shards:</color> Directional Attack (1s CD)\n" +
                       "• <color=#1E90FF>[2] Crystal Cross:</color> Positional Attack (1s CD)\n" +
                       "• <color=#32CD32>[3] Healing:</color> Heal 1 HP (Needs healing item charge, 1s CD)\n" +
-                      "• <color=#FF6347>[4] Super Slash:</color> Huge AoE directional attack! 1-hits enemies & breaks doors. (Needs rare item charge, 1 use per run!)"
+                      "• <color=#FF6347>[4] Super Slash:</color> Huge AoE directional attack! 1-hits enemies (pierces shields) & breaks doors. (Needs rare item charge, 1 use per run!)"
         },
         new TutorialPage 
         {
