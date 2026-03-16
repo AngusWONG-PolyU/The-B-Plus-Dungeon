@@ -116,7 +116,8 @@ public class SpellProjectile : MonoBehaviour
         {
             if (hitEffect != null)
             {
-                Instantiate(hitEffect, transform.position, Quaternion.identity);
+                GameObject effect = Instantiate(hitEffect, transform.position, Quaternion.identity);
+                Destroy(effect, 2f);
             }
             Destroy(gameObject);
         }

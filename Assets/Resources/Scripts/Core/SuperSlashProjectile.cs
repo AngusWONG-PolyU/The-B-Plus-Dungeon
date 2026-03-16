@@ -61,7 +61,8 @@ public class SuperSlashProjectile : SpellProjectile
         // 5. Play the hit effect without destroying the projectile
         if (hitSomething && hitEffect != null)
         {
-            Instantiate(hitEffect, other.bounds.center, Quaternion.identity);
+            GameObject effect = Instantiate(hitEffect, other.bounds.center, Quaternion.identity);
+            Destroy(effect, 2f);
         }
     }
 }
