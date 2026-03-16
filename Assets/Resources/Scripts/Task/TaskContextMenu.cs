@@ -114,8 +114,18 @@ public class TaskContextMenu : MonoBehaviour
             try
             {
                 BPlusTreeVisualNode node = _currentTargetKey.GetParentVisualNode();
+                int val = target.GetValue();
+                
                 // Can only copy up if the current node is a Leaf Node
                 bool canCopyUp = (node != null && node.CoreNode != null && node.CoreNode.IsLeaf);
+                
+                // Cannot copy up a key that is the target of a Deletion task
+                if (BPlusTreeTaskManager.Instance != null && 
+                    BPlusTreeTaskManager.Instance.CurrentTaskType == BPlusTreeTaskType.Deletion && 
+                    BPlusTreeTaskManager.Instance.TargetKeys.Contains(val))
+                {
+                    canCopyUp = false;
+                }
                                   
                 copyUpButton.interactable = canCopyUp;
             }
