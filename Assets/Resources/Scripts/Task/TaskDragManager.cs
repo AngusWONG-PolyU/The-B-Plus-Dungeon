@@ -608,57 +608,13 @@ public class TaskDragManager : MonoBehaviour
     // Move Key Logic
     private void PerformMoveKey(BPlusTreeVisualNode source, BPlusTreeVisualNode target, int key)
     {
-        // For internal nodes migrating keys between siblings, we must also transfer a child pointer
-        if (!source.CoreNode.IsLeaf && !target.CoreNode.IsLeaf && source.CoreNode.Parent == target.CoreNode.Parent && source.CoreNode.Parent != null)
-        {
-            var parent = source.CoreNode.Parent;
-            int sourceIndex = parent.Children.IndexOf(source.CoreNode);
-            int targetIndex = parent.Children.IndexOf(target.CoreNode);
-            
-            if (sourceIndex == targetIndex + 1) // Source is right, Target is left
-            {
-                // Moving FIRST key and FIRST child to target
-                if (source.CoreNode.Children.Count > 0)
-                {
-                    var childToMove = source.CoreNode.Children[0];
-                    source.CoreNode.Children.RemoveAt(0);
-                    target.CoreNode.Children.Add(childToMove);
-                    childToMove.Parent = target.CoreNode;
-                    
-                    // Re-sort target children based on their minimum keys
-                    target.CoreNode.Children.Sort((a, b) => {
-                        int keyA = BPlusTreeTaskManager.Instance.GetSubtreeMin(a);
-                        int keyB = BPlusTreeTaskManager.Instance.GetSubtreeMin(b);
-                        return keyA.CompareTo(keyB);
-                    });
-                }
-            }
-            else if (sourceIndex == targetIndex - 1) // Source is left, Target is right
-            {
-                // Moving LAST key and LAST child to target
-                if (source.CoreNode.Children.Count > 0)
-                {
-                    var childToMove = source.CoreNode.Children[source.CoreNode.Children.Count - 1];
-                    source.CoreNode.Children.RemoveAt(source.CoreNode.Children.Count - 1);
-                    // Add it as first child of target, then sort
-                    target.CoreNode.Children.Insert(0, childToMove);
-                    childToMove.Parent = target.CoreNode;
-                    
-                    // Re-sort target children based on their minimum keys
-                    target.CoreNode.Children.Sort((a, b) => {
-                        int keyA = BPlusTreeTaskManager.Instance.GetSubtreeMin(a);
-                        int keyB = BPlusTreeTaskManager.Instance.GetSubtreeMin(b);
-                        return keyA.CompareTo(keyB);
-                    });
-                }
-            }
-        }
-
         // 1. Remove from source
         RemoveKeyFromNode(source, key);
 
         // 2. Add to the target
         AddKeyToNode(target, key);
+
+        AutoResolveChildren();
 
         UpdateTreeVisuals();
     }
@@ -771,8 +727,80 @@ public class TaskDragManager : MonoBehaviour
         UpdateTreeVisuals();
     }
 
-    #endregion
+    private void CollectInternalNodes(BPlusTreeNode<int, string> node, List<BPlusTreeNode<int, string>> list)
+    {
+        if (node == null || node.IsLeaf) return;
+        list.Add(node);
+        foreach (var child in node.Children)
+        {
+            CollectInternalNodes(child, list);
+        }
+    }
 
+    private void AutoResolveChildren()
+    {
+        var root = BPlusTreeTaskManager.Instance.CurrentTree.Root;
+        if (root == null || root.IsLeaf) return;
+
+        List<BPlusTreeNode<int, string>> allInternalNodes = new List<BPlusTreeNode<int, string>>();
+        CollectInternalNodes(root, allInternalNodes);
+
+        List<BPlusTreeNode<int, string>> donors = new List<BPlusTreeNode<int, string>>();
+        List<BPlusTreeNode<int, string>> receivers = new List<BPlusTreeNode<int, string>>();
+
+        foreach (var node in allInternalNodes)
+        {
+            if (node.Children.Count > node.Keys.Count + 1) donors.Add(node);
+            else if (node.Children.Count < node.Keys.Count + 1) receivers.Add(node);
+        }
+
+        if (donors.Count == 1 && receivers.Count == 1)
+        {
+            var donor = donors[0];
+            var receiver = receivers[0];
+
+            if (AreNodesAdjacent(donor, receiver) || donor.Parent == receiver.Parent)
+            {
+                int donorMin = GetNodeMinKey(donor);
+                int receiverMin = GetNodeMinKey(receiver);
+
+                BPlusTreeNode<int, string> childToTransfer = null;
+                if (donorMin > receiverMin)
+                {
+                    // Donor is on the right, transfer its first child
+                    if (donor.Children.Count > 0)
+                    {
+                        childToTransfer = donor.Children[0];
+                        donor.Children.RemoveAt(0);
+                        receiver.Children.Add(childToTransfer);
+                    }
+                }
+                else
+                {
+                    // Donor is on the left, transfer its last child
+                    if (donor.Children.Count > 0)
+                    {
+                        childToTransfer = donor.Children[donor.Children.Count - 1];
+                        donor.Children.RemoveAt(donor.Children.Count - 1);
+                        receiver.Children.Insert(0, childToTransfer);
+                    }
+                }
+
+                if (childToTransfer != null)
+                {
+                    childToTransfer.Parent = receiver;
+                    
+                    // Re-sort both nodes' children
+                    donor.Children.Sort((a, b) => BPlusTreeTaskManager.Instance.GetSubtreeMin(a).CompareTo(BPlusTreeTaskManager.Instance.GetSubtreeMin(b)));
+                    receiver.Children.Sort((a, b) => BPlusTreeTaskManager.Instance.GetSubtreeMin(a).CompareTo(BPlusTreeTaskManager.Instance.GetSubtreeMin(b)));
+                    
+                    Debug.Log("Auto-Resolved Child Transfer: Moved a child from donor to receiver due to Borrowing.");
+                }
+            }
+        }
+    }
+
+    #endregion
 
     #region Data Mutation Helpers
 
@@ -978,7 +1006,7 @@ public class TaskDragManager : MonoBehaviour
         {
             return dungeonGen.difficultyMode == DungeonGenerator.DifficultyMode.Tutorial;
         }
-        return true; 
+        return true;
     }
 
     #endregion
