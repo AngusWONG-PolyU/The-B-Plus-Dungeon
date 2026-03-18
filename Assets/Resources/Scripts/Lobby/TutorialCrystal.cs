@@ -48,12 +48,18 @@ public class TutorialCrystal : MonoBehaviour
         },
         new TutorialPage 
         {
-            title = "Task / Operations",
+            title = "Task / Operations (1)",
             content = "• <color=#FFD700>Move/Promote:</color> Drag and drop a Key to another Node.\n\n" +
                       "• <color=#FFD700>Merge Node:</color> Drag and Drop a Node onto another Node.\n\n" +
                       "• <color=#FFD700>Right-Click Options:</color>\n" +
                       "  • Right-click a Key to <color=#FF6347>Delete</color>, <color=#32CD32>CopyUp</color>, or <color=#1E90FF>Split Node</color>.\n" +
                       "  • Right-click an empty Node to delete it."
+        },
+        new TutorialPage 
+        {
+            title = "Task / Operations (2)",
+            content = "• <color=#FFD700>Submit / Close (Top Right):</color> Click the upper-right button to submit and verify. After review, click the same button to close.\n\n" +
+                      "• <color=#FFD700>Reset (Bottom Center):</color> Click the bottom-center button to restart from the initial state (use when stuck or after too many mistakes).",
         },
         new TutorialPage 
         {
