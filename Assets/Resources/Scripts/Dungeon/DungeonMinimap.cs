@@ -334,7 +334,7 @@ public class DungeonMinimap : MonoBehaviour
                 
                 // Set size for the text background
                 RectTransform textRect = fullMapMessageText.GetComponent<RectTransform>();
-                textRect.sizeDelta = new Vector2(240f, 40f); 
+                textRect.sizeDelta = new Vector2(480f, 160f); 
             }
         }
 

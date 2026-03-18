@@ -32,6 +32,15 @@ public class TutorialCrystal : MonoBehaviour
         },
         new TutorialPage 
         {
+            title = "Full Map View",
+            content = "Press <color=#1E90FF>M</color> to see the entire B+ tree structure at once!\n\n" +
+                      "<color=#FFD700>In Full Map View:</color>\n" +
+                      "• <color=#1E90FF>Scroll:</color> Zoom in/out to see different details.\n" +
+                      "• <color=#1E90FF>Drag:</color> Pan around to explore the tree structure.\n\n" +
+                      "Press <color=#1E90FF>M</color> again to close and return to the current node view."
+        },
+        new TutorialPage 
+        {
             title = "Skills Overview",
             content = "Press 1-4 to cast! <color=#FFD700>(Press again to cancel aiming)</color>\n\n" +
                       "• <color=#1E90FF>[1] Crystal Shards:</color> Directional Attack (1s CD)\n" +
