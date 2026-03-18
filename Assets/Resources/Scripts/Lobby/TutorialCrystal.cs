@@ -17,7 +17,7 @@ public class TutorialCrystal : MonoBehaviour
                       "• <color=#FF6347>Top Left:</color> Hearts (HP)\n" +
                       "• <color=#1E90FF>Top Right:</color> Minimap (View B+ tree structure)\n" +
                       "• <color=#32CD32>Bottom Right:</color> Skills (Press 1, 2, 3, or 4 to cast)\n" +
-                      "• <color=#FFA500>Bottom Left:</color> Settings (Task configs, Time limits, Return to Lobby)\n" +
+                      "• <color=#FFA500>Bottom Left:</color> Settings (Task Configs, Time Limits, Volume, Brightness, Return to Lobby)\n" +
                       "• <color=#FFD700>Bottom Center:</color> Your current Target!"
         },
         new TutorialPage 
