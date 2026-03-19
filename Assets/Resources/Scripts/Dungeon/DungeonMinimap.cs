@@ -64,7 +64,21 @@ public class DungeonMinimap : MonoBehaviour
     private Dictionary<BPlusTreeNode<int, int>, GameObject> nodeToGameObject = new Dictionary<BPlusTreeNode<int, int>, GameObject>();
     [System.NonSerialized]
     private BPlusTreeNode<int, int> currentNode; // Current node player is at
-
+    
+    // Shared white texture for all UI lines to avoid VRAM waste
+    private static Sprite whiteLineSprite;
+    
+    private Sprite GetWhiteLineSprite()
+    {
+        if (whiteLineSprite == null)
+        {
+            Texture2D tex = new Texture2D(1, 1);
+            tex.SetPixel(0, 0, Color.white);
+            tex.Apply();
+            whiteLineSprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+        }
+        return whiteLineSprite;
+    }
     private Vector2 CurrentNodeSize => isFullMapOpen ? fullMapNodeSize : nodeSize;
     private int CurrentFontSize => isFullMapOpen ? fullMapFontSize : normalFontSize;
     private float CurrentLevelSpacing => isFullMapOpen ? fullMapLevelSpacing : levelSpacing;
@@ -648,10 +662,7 @@ public class DungeonMinimap : MonoBehaviour
         lineObj.transform.SetParent(parent.transform);
         
         Image line = lineObj.AddComponent<Image>();
-        Texture2D tex = new Texture2D(1, 1);
-        tex.SetPixel(0, 0, Color.white);
-        tex.Apply();
-        line.sprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+        line.sprite = GetWhiteLineSprite();
         line.color = color;
         
         RectTransform rect = lineObj.GetComponent<RectTransform>();
@@ -677,11 +688,8 @@ public class DungeonMinimap : MonoBehaviour
             Image line = lineObj.AddComponent<Image>();
             line.color = isLeafConnection ? new Color(0.2f, 0.6f, 1f, 0.5f) : connectionLineColor;
             
-            // Create a simple white texture for the line
-            Texture2D tex = new Texture2D(1, 1);
-            tex.SetPixel(0, 0, Color.white);
-            tex.Apply();
-            line.sprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+            // Use shared white sprite to avoid VRAM waste
+            line.sprite = GetWhiteLineSprite();
         }
         
         RectTransform rect = lineObj.GetComponent<RectTransform>();
