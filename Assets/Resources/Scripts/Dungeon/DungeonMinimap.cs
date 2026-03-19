@@ -52,6 +52,8 @@ public class DungeonMinimap : MonoBehaviour
     public float maxZoom = 2.0f;
     public float zoomSensitivity = 1.0f;
     public float panSensitivity = 3.0f;
+    public float lineOverlap = 1.25f; // Small full-map overlap to hide sub-pixel gaps
+    public float leafLineExtraOverlap = 0.5f; // Slight extra overlap for next-leaf links
     
     // Control how tight the tree is packed
     public float treeChildPadding = 10f; // Gap between leaf nodes in full map
@@ -89,6 +91,7 @@ public class DungeonMinimap : MonoBehaviour
         // Ensure text is hidden at start
         if (fullMapMessageText != null)
         {
+            DisableFullMapTextRaycast();
             fullMapMessageText.SetActive(false);
         }
         
@@ -156,6 +159,14 @@ public class DungeonMinimap : MonoBehaviour
 
     private void HandleFullMapInput()
     {
+        // Do not allow map input while paused
+        if (Time.timeScale <= 0f)
+        {
+            isDragging = false;
+            isValidDrag = false;
+            return;
+        }
+
         // Zoom
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll != 0)
@@ -308,6 +319,8 @@ public class DungeonMinimap : MonoBehaviour
                 {
                     fullMapMessageText.transform.SetParent(minimapCanvas.transform);
                 }
+
+                DisableFullMapTextRaycast();
                 
                 fullMapMessageText.transform.SetAsLastSibling(); // Ensure it is on the top
                 
@@ -672,21 +685,64 @@ public class DungeonMinimap : MonoBehaviour
         }
         
         RectTransform rect = lineObj.GetComponent<RectTransform>();
+        if (rect == null) return;
+
+        // Force all lines into the same local UI coordinate setup
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.localScale = Vector3.one;
         
         // Calculate position and rotation
         Vector2 fromPos = from;
         Vector2 toPos = to;
         Vector2 direction = toPos - fromPos;
         float distance = direction.magnitude;
+        if (distance <= 0.0001f) return;
+
+        // Keep default edge-to-edge lines in normal/minimap view
+        float overlap = isFullMapOpen ? (lineOverlap + (isLeafConnection ? leafLineExtraOverlap : 0f)) : 0f;
+
+        // Safety cap to prevent overshoot through nodes on short segments
+        float maxSafeOverlap = Mathf.Max((distance * 0.5f) - 0.25f, 0f);
+        overlap = Mathf.Min(overlap, maxSafeOverlap);
+
+        if (overlap > 0.01f)
+        {
+            Vector2 unit = direction / distance;
+            fromPos -= unit * overlap;
+            toPos += unit * overlap;
+            direction = toPos - fromPos;
+            distance = direction.magnitude;
+        }
         
         rect.anchoredPosition = (fromPos + toPos) / 2f;
         rect.sizeDelta = new Vector2(distance, isLeafConnection ? 4f : 3f); // Slightly thicker line
-        rect.rotation = Quaternion.FromToRotation(Vector3.right, direction);
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        rect.localRotation = Quaternion.Euler(0f, 0f, angle);
         
         // Make sure line renders behind nodes
         lineObj.transform.SetAsFirstSibling();
         
         displayedLines.Add(lineObj);
+    }
+
+    private void DisableFullMapTextRaycast()
+    {
+        if (fullMapMessageText == null) return;
+
+        Graphic[] graphics = fullMapMessageText.GetComponentsInChildren<Graphic>(true);
+        for (int i = 0; i < graphics.Length; i++)
+        {
+            graphics[i].raycastTarget = false;
+        }
+
+        CanvasGroup canvasGroup = fullMapMessageText.GetComponent<CanvasGroup>();
+        if (canvasGroup != null)
+        {
+            canvasGroup.blocksRaycasts = false;
+            canvasGroup.interactable = false;
+        }
     }
 
     // Clears all displayed minimap elements
@@ -782,7 +838,7 @@ public class DungeonMinimap : MonoBehaviour
             float mapBottomY = targetY + (minY * scale);
             float textY = mapBottomY - 30f; // 30 units padding below map
             
-            // Align text with center of map horizontally
+            // Align text with the center of the map horizontally
             float mapCenterX = targetX + ((minX + maxX) / 2f * scale);
             
             textRect.anchoredPosition = new Vector2(mapCenterX, textY);
