@@ -61,7 +61,7 @@ MonoBehaviour:
   active: 1
   enabled:
     overrideState: 1
-    value: 0
+    value: 1
   mode:
     overrideState: 1
     value: 0
@@ -157,7 +157,7 @@ MonoBehaviour:
   active: 1
   enabled:
     overrideState: 1
-    value: 0
+    value: 1
   filtering:
     overrideState: 0
     value: {x: 50, y: 95}
@@ -225,7 +225,7 @@ MonoBehaviour:
     value: 1
   gradingMode:
     overrideState: 1
-    value: 0
+    value: 1
   externalLut:
     overrideState: 0
     value: {fileID: 0}
@@ -281,7 +281,7 @@ MonoBehaviour:
     value: -0.1
   contrast:
     overrideState: 1
-    value: 30
+    value: 20
   mixerRedOutRedIn:
     overrideState: 0
     value: 100
@@ -1536,10 +1536,10 @@ MonoBehaviour:
     value: 1
   intensity:
     overrideState: 1
-    value: 4
+    value: 2.5
   threshold:
     overrideState: 1
-    value: 0.8
+    value: 1.1
   softKnee:
     overrideState: 1
     value: 0.8
@@ -1548,7 +1548,7 @@ MonoBehaviour:
     value: 65472
   diffusion:
     overrideState: 1
-    value: 5
+    value: 8
   anamorphicRatio:
     overrideState: 0
     value: 0
@@ -1556,8 +1556,8 @@ MonoBehaviour:
     overrideState: 0
     value: {r: 1, g: 1, b: 1, a: 1}
   fastMode:
-    overrideState: 1
-    value: 1
+    overrideState: 0
+    value: 0
   dirtTexture:
     overrideState: 0
     value: {fileID: 0}

@@ -37,7 +37,7 @@ public class GameSettingsUI : MonoBehaviour
         PlayerPrefs.SetInt("TaskMode", 0);
         PlayerPrefs.SetInt("TimeLimitMode", 0);
         PlayerPrefs.SetFloat("GlobalVolume", 1.0f);
-        PlayerPrefs.SetFloat("Brightness", -20f);
+        PlayerPrefs.SetFloat("Brightness", -0.1f);
         PlayerPrefs.Save();
 
         // Load Audio and Lighting settings
@@ -148,10 +148,10 @@ public class GameSettingsUI : MonoBehaviour
     
     private void ApplyBrightness(float value)
     {
-        // Control brightness using Post Processing's ColorGrading.brightness
+        // Control brightness using Post Processing's ColorGrading.postExposure
         if (colorGrading != null)
         {
-            colorGrading.brightness.value = value;
+            colorGrading.postExposure.value = value;
         }
     }
 
@@ -170,7 +170,7 @@ public class GameSettingsUI : MonoBehaviour
 
     public void ResetBrightnessToDefault()
     {
-        float defaultBrightness = -20f;
+        float defaultBrightness = -0.1f;
         if (brightnessSlider != null)
         {
             brightnessSlider.value = defaultBrightness;
