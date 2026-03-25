@@ -200,6 +200,11 @@ public class DoorController : MonoBehaviour, ITaskTrigger
         {
             Debug.Log("Door Task Failed.");
             
+            if (PlayerInstructionUI.Instance != null)
+            {
+                PlayerInstructionUI.Instance.ShowInstruction("Unlock Failed! The Door's Counter-Spell Strikes Back!\nBRACE FOR IMPACT!", 3f, true);
+            }
+            
             // Cast Counter-Magic at the player
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
