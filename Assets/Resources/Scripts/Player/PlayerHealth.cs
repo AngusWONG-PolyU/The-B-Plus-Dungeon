@@ -14,7 +14,9 @@ public class PlayerHealth : MonoBehaviour
     public float respawnDelay = 3f;
     public GameObject respawnEffect;
 
-
+    [Header("Tutorial Safeguard")]
+    public float tutorialLockHpInstructionDuration = 3f;
+    
     [Header("Events")]
     public UnityEvent<int> OnHealthChanged;
     public UnityEvent OnPlayerDeath;
@@ -60,11 +62,11 @@ public class PlayerHealth : MonoBehaviour
 
         if (currentHearts <= 0)
         {
-            DungeonManager dm = FindObjectOfType<DungeonManager>();
-            if (dm != null && dm.dungeonGenerator != null && dm.dungeonGenerator.difficultyMode == DungeonGenerator.DifficultyMode.Tutorial)
+            if (IsInTutorialMode())
             {
-                currentHearts = maxHearts;
-                Debug.Log("Tutorial Mode: Player health reset to full instead of dying.");
+                currentHearts = 1;
+                Debug.Log("Tutorial Mode: Fatal damage prevented by lock HP safeguard.");
+                ShowTutorialLockHpInstruction();
             }
             else
             {
@@ -74,6 +76,20 @@ public class PlayerHealth : MonoBehaviour
         }
 
         OnHealthChanged?.Invoke(currentHearts);
+    }
+    
+    private bool IsInTutorialMode()
+    {
+        DungeonManager dm = FindObjectOfType<DungeonManager>();
+        return dm != null && dm.dungeonGenerator != null && dm.dungeonGenerator.difficultyMode == DungeonGenerator.DifficultyMode.Tutorial;
+    }
+    
+    private void ShowTutorialLockHpInstruction()
+    {
+        if (PlayerInstructionUI.Instance != null)
+        {
+            PlayerInstructionUI.Instance.ShowInstruction("Emergency Seal Activated! Tutorial Mana Matrix anchors your life at 1 HP.\nYou cannot die in this Tutorial Dungeon.", tutorialLockHpInstructionDuration, true);
+        }
     }
 
     public void Heal(int amount)
